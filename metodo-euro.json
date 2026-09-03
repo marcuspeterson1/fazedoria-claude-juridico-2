@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "nome_escritorio": "CONFIGURE-ME",
+  "modo": "sandbox",
+  "fonte_autos": "congelado",
+  "conectores": {
+    "sync": {"habilitado": false, "somente_leitura": true},
+    "infinitum": {"habilitado": false}
+  },
+  "gates": {
+    "revisao_humana": true,
+    "protocolo_manual": true,
+    "promocao_skill_por_controller": true
+  }
+}
+
