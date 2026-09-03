@@ -12,19 +12,6 @@ kit_sync = importlib.util.module_from_spec(SYNC_SPEC)
 SYNC_SPEC.loader.exec_module(kit_sync)
 
 class EuroTests(unittest.TestCase):
-    def test_gabarito_is_blocked(self):
-        with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "caso" / "gabarito" / "entrada"
-            p.mkdir(parents=True)
-            with self.assertRaises(SystemExit):
-                euro.safe_input_path(p)
-
-    def test_only_existing_entrada_is_allowed(self):
-        with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "caso" / "entrada"
-            p.mkdir(parents=True)
-            self.assertEqual(euro.safe_input_path(p), p.resolve())
-
     def test_state_machine_rejects_skip(self):
         data = {"status": "aberta"}
         with self.assertRaises(SystemExit):

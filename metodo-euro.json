@@ -2,7 +2,7 @@
   "schema_version": 1,
   "nome_escritorio": "CONFIGURE-ME",
   "organizacao": null,
-  "modo": "sandbox",
+  "modo": "mvp",
   "fonte_autos": "sync",
   "conectores": {
     "sync": {"habilitado": true, "obrigatorio_metodo_euro": true, "somente_leitura": true},

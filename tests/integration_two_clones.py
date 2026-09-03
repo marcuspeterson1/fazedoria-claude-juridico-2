@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ensaio determinístico de dois computadores; não lê qualquer pasta gabarito."""
+"""Ensaio determinístico da fila compartilhada em dois computadores."""
 import json
 import os
 import shutil
@@ -28,15 +28,10 @@ def git(cwd, *args):
 
 with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
     base = Path(tmp)
-    lab = base / "laboratorio-sintetico"
-    for ref, _cnj, _providencia in CASES:
-        entrada = lab / ref / "entrada"
-        entrada.mkdir(parents=True)
-        (entrada / "LEIA-ME.md").write_text("Fixture sintética sem dado de cliente.\n", encoding="utf-8")
     seed = base / "seed"
     shutil.copytree(SOURCE, seed, ignore=shutil.ignore_patterns(".git", "__pycache__", ".metodo-euro.local.json"))
     git(seed, "init", "-b", "main")
-    git(seed, "config", "user.name", "Professor Seed")
+    git(seed, "config", "user.name", "Origem do Kit")
     git(seed, "config", "user.email", "seed@example.invalid")
     git(seed, "add", ".")
     git(seed, "commit", "-m", "kit 2 base")
@@ -45,22 +40,14 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
     controller, executor = base / "mac-controller", base / "notebook-executor"
     git(base, "clone", str(bare), str(controller))
     git(base, "clone", str(bare), str(executor))
-    for clone, name, email in ((controller, "Marcus Controller", "controller@example.invalid"),
+    for clone, name, email in ((controller, "Controller Exemplo", "controller@example.invalid"),
                                (executor, "Advogada Dois", "advogada@example.invalid")):
         git(clone, "config", "user.name", name); git(clone, "config", "user.email", email)
-    run(controller, sys.executable, "euro.py", "iniciar-escritorio", "--nome", "Marcus", "--escritorio", "Laboratório Método Euro", "--agente", "claude", "--repositorio", str(bare), "--tambem-controller")
-    owner_local_path = controller / ".metodo-euro.local.json"
-    owner_local = json.loads(owner_local_path.read_text(encoding="utf-8"))
-    owner_local["raizes_entrada"] = {"congelado": str(lab)}
-    owner_local_path.write_text(json.dumps(owner_local, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    git(controller, "add", "metodo-euro.json"); git(controller, "commit", "-m", "configura escritório sandbox"); git(controller, "push")
+    run(controller, sys.executable, "euro.py", "iniciar-escritorio", "--nome", "Dono Exemplo", "--escritorio", "Escritório Exemplo", "--agente", "claude", "--repositorio", str(bare), "--tambem-controller")
+    git(controller, "add", "metodo-euro.json"); git(controller, "commit", "-m", "configura escritório"); git(controller, "push")
     invite = run(controller, sys.executable, "euro.py", "gerar-codigo", "--papel", "advogado", capture=True)
     git(executor, "pull", "--rebase")
     run(executor, sys.executable, "euro.py", "entrar-com-codigo", invite, "--nome", "Advogada Dois", "--agente", "claude")
-    executor_local_path = executor / ".metodo-euro.local.json"
-    executor_local = json.loads(executor_local_path.read_text(encoding="utf-8"))
-    executor_local["raizes_entrada"] = {"congelado": str(lab)}
-    executor_local_path.write_text(json.dumps(executor_local, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     links = base / "perfis"
     run(executor, sys.executable, "euro.py", "instalar-skills", "--destino-base", str(links))
     if not (links / ".claude/skills/executar-tarefa/SKILL.md").is_file() or not (links / ".agents/skills/executar-tarefa/SKILL.md").is_file():
@@ -73,20 +60,17 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
 
     task_ids = []
     for index, (ref, cnj, providencia) in enumerate(CASES, 1):
-        task_id = run(controller, sys.executable, "euro.py", "criar-tarefa", "--cnj", cnj, "--referencia", ref, "--providencia", providencia, "--responsavel", "Advogada Dois", "--fonte", "congelado", capture=True)
+        task_id = run(controller, sys.executable, "euro.py", "criar-tarefa", "--cnj", cnj, "--referencia", ref, "--providencia", providencia, "--responsavel", "Advogada Dois", capture=True)
         task_ids.append(task_id)
         git(controller, "add", "fila"); git(controller, "commit", "-m", f"fila: caso {index}"); git(controller, "push")
         git(executor, "pull", "--rebase")
         run(executor, sys.executable, "euro.py", "assumir", task_id)
-        context = run(executor, sys.executable, "euro.py", "contexto", task_id, capture=True)
-        if "gabarito" not in context.lower() or "BLOQUEADO" not in context:
-            raise SystemExit("Gate de gabarito não ficou explícito.")
         draft = base / f"minuta-{index}.md"
-        draft.write_text(f"<!-- SIMULAÇÃO: NÃO PROTOCOLAR -->\n# Rodada {index}\n\nProvidência sugerida sujeita a revisão: {providencia}.\n", encoding="utf-8")
+        draft.write_text(f"<!-- RASCUNHO: NÃO PROTOCOLAR -->\n# Rodada {index}\n\nProvidência sugerida sujeita a revisão: {providencia}.\n", encoding="utf-8")
         run(executor, sys.executable, "euro.py", "entregar", task_id, str(draft))
         git(executor, "add", "fila", "entregas"); git(executor, "commit", "-m", f"executor: entrega caso {index}"); git(executor, "push")
         git(controller, "pull", "--rebase")
-        run(controller, sys.executable, "euro.py", "revisar", task_id, "aprovada", "--feedback", f"Rodada {index} aprovada apenas para validar o fluxo técnico do laboratório.")
+        run(controller, sys.executable, "euro.py", "revisar", task_id, "aprovada", "--feedback", f"Rodada técnica {index} aprovada.")
         git(controller, "add", "fila"); git(controller, "commit", "-m", f"controller: revisa caso {index}"); git(controller, "push")
         git(executor, "pull", "--rebase")
         if index == 1:
@@ -108,5 +92,4 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
     states = [json.loads((controller / "fila" / f"{task_id}.json").read_text())["status"] for task_id in task_ids]
     if states != ["aprovada"] * 3:
         raise SystemExit(f"Estados finais inesperados: {states}")
-    print("ENSAIO OK — 2 clones, 2 identidades, 3 casos aprovados no fluxo técnico, 1 skill candidata promovida.")
-    print("GABARITOS NÃO LIDOS — o ensaio acessou somente as três pastas entrada.")
+    print("ENSAIO OK — 2 clones, 2 identidades, 3 tarefas aprovadas e 1 skill candidata promovida.")

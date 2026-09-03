@@ -1,5 +1,5 @@
-<!-- SIMULAÇÃO: NÃO PROTOCOLAR -->
-# Minuta simulada
+<!-- RASCUNHO: REVISÃO HUMANA OBRIGATÓRIA. NÃO PROTOCOLAR AUTOMATICAMENTE. -->
+# Minuta para revisão
 
 ## Alertas e lacunas
 
@@ -8,4 +8,3 @@
 ## Estratégia submetida à revisão humana
 
 ## Texto da peça
-

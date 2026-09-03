@@ -5,7 +5,6 @@ description: Revisa entrega, compara com critérios jurídicos e decide aprovaç
 
 # Revisão humana
 
-O Controller revisa fatos, fontes, estratégia, aderência ao ato e limites. No laboratório, só abra o
-gabarito após a entrega registrada. Classifique achados como erro de execução, deficiência da skill
-ou peculiaridade do caso. Registre decisão e feedback; aprovação não equivale a protocolo.
-
+O Controller revisa fatos, fontes, estratégia, aderência ao ato e limites. Classifique achados como
+erro de execução, deficiência da skill ou peculiaridade do caso. Registre decisão e feedback;
+aprovação não equivale a protocolo.

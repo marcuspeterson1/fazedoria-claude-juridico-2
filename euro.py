@@ -120,23 +120,9 @@ def transition(data, target):
         raise SystemExit(f"Transição inválida: {current} → {target}")
     data["status"] = target
 
-def safe_input_path(path):
-    resolved = Path(path).expanduser().resolve()
-    if "gabarito" in {part.lower() for part in resolved.parts}:
-        raise SystemExit("BLOQUEADO: o Advogado não pode abrir caminho de gabarito.")
-    if resolved.name != "entrada" or not resolved.is_dir():
-        raise SystemExit("Entrada inválida: o caminho deve terminar em uma pasta existente chamada 'entrada'.")
-    return resolved
-
 def cmd_configure(a):
     if a.papel not in VALID_ROLES or a.agente not in VALID_AGENTS:
         raise SystemExit("Papel ou agente inválido.")
-    roots = {}
-    if a.raiz_entradas:
-        root = Path(a.raiz_entradas).expanduser().resolve()
-        if not root.is_dir():
-            raise SystemExit("Raiz de entradas não existe.")
-        roots["congelado"] = str(root)
     shared = load(SHARED)
     org = shared.get("organizacao") or {}
     if a.papel == "controller" and org.get("controllers") and a.nome not in org["controllers"]:
@@ -144,7 +130,7 @@ def cmd_configure(a):
     data = {"schema_version": 1, "colaborador": a.nome, "papel": a.papel, "papeis": [a.papel],
             "agente": a.agente, "repositorio_privado_confirmado": a.repositorio_privado_confirmado,
             "sincronizacao_automatica": True, "organizacao_id": org.get("id"),
-            "raizes_entrada": roots, "configurado_em": now()}
+            "configurado_em": now()}
     save(LOCAL, data)
     if shared["nome_escritorio"] == "CONFIGURE-ME" and a.escritorio:
         shared["nome_escritorio"] = a.escritorio
@@ -155,7 +141,7 @@ def cmd_start_office(a):
     shared = load(SHARED)
     org = shared.get("organizacao") or {}
     if org.get("id") and org.get("dono") != a.nome:
-        raise SystemExit("Este escritório já tem um Dono/Administrador congelado.")
+        raise SystemExit("Este escritório já tem um Dono/Administrador registrado.")
     if not org.get("id"):
         shared["nome_escritorio"] = a.escritorio
         shared["organizacao"] = {"id": str(uuid.uuid4()), "dono": a.nome,
@@ -208,7 +194,7 @@ def cmd_diagnose(_a):
     try:
         local, shared = config()
         checks += [
-            (shared.get("modo") == "sandbox", "modo sandbox ativo"),
+            (shared.get("modo") == "mvp", "modo MVP ativo"),
             (shared.get("gates", {}).get("protocolo_manual") is True, "protocolo continua manual"),
             (local_roles(local).issubset(VALID_ROLES) and bool(local_roles(local)), "papel local válido"),
             (local.get("agente") in VALID_AGENTS, "agente local válido"),
@@ -232,12 +218,10 @@ def cmd_create(a):
     local, shared = require_role("controller")
     if local.get("repositorio_privado_confirmado") is not True:
         raise SystemExit("BLOQUEADO: crie/conecte e confirme o repositório privado antes de registrar tarefas.")
-    if shared["modo"] != "sandbox" and a.fonte == "congelado":
-        raise SystemExit("Fonte congelada é destinada ao sandbox.")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     task_id = f"{stamp}-{slug(a.referencia)}"
     data = {"schema_version": 1, "id": task_id, "status": "aberta", "modo": shared["modo"],
-            "cnj": a.cnj, "referencia_entrada": a.referencia, "fonte": a.fonte,
+            "cnj": a.cnj, "referencia_entrada": a.referencia, "fonte": "sync",
             "providencia_sugerida": a.providencia, "responsavel": a.responsavel,
             "criada_por": local["colaborador"], "criada_em": now(), "entrega": None,
             "revisao": None, "historico": []}
@@ -274,18 +258,11 @@ def cmd_claim(a):
     print("OK — tarefa assumida:", a.id)
 
 def resolve_context(data, local):
-    if data["fonte"] == "sync":
-        destino = ROOT / ".metodo-euro-contextos" / data["id"] / "entrada"
-        try:
-            return sync_connector.materializar_entrada(data["cnj"], destino, local["organizacao_id"])
-        except RuntimeError as exc:
-            raise SystemExit(f"Não foi possível preparar os autos pelo Sync: {exc}")
-    if data["fonte"] != "congelado":
-        raise SystemExit("Fonte de autos desconhecida; nenhum acesso foi executado.")
-    root = local.get("raizes_entrada", {}).get("congelado")
-    if not root:
-        raise SystemExit("Raiz local das entradas congeladas não configurada.")
-    return safe_input_path(Path(root) / data["referencia_entrada"] / "entrada")
+    destino = ROOT / ".metodo-euro-contextos" / data["id"] / "entrada"
+    try:
+        return sync_connector.materializar_entrada(data["cnj"], destino, local["organizacao_id"])
+    except RuntimeError as exc:
+        raise SystemExit(f"Não foi possível preparar os autos pelo Sync: {exc}")
 
 def cmd_context(a):
     local, _ = require_role("advogado")
@@ -294,7 +271,6 @@ def cmd_context(a):
         raise SystemExit("Assuma a tarefa antes de abrir o contexto.")
     path = resolve_context(data, local)
     print("ENTRADA AUTORIZADA:", path)
-    print("GABARITO: BLOQUEADO até entrega e revisão")
 
 def cmd_submit(a):
     local, _ = require_role("advogado")
@@ -304,8 +280,6 @@ def cmd_submit(a):
     source = Path(a.arquivo).expanduser().resolve()
     if not source.is_file():
         raise SystemExit("Arquivo de entrega não encontrado.")
-    if "gabarito" in {part.lower() for part in source.parts}:
-        raise SystemExit("Entrega não pode vir do gabarito.")
     target_dir = ROOT / "entregas" / a.id
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / source.name
@@ -515,9 +489,9 @@ def parser():
     q = sub.add_parser("entrar-com-codigo"); q.add_argument("codigo"); q.add_argument("--nome", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.set_defaults(fn=cmd_join)
     q = sub.add_parser("gerar-codigo"); q.add_argument("--papel", choices=["advogado", "controller"], required=True); q.set_defaults(fn=cmd_invite)
     q = sub.add_parser("decodificar-codigo"); q.add_argument("codigo"); q.set_defaults(fn=cmd_decode_invite)
-    q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--raiz-entradas"); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
+    q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
     q = sub.add_parser("diagnosticar"); q.set_defaults(fn=cmd_diagnose)
-    q = sub.add_parser("criar-tarefa"); q.add_argument("--cnj", required=True); q.add_argument("--referencia", required=True); q.add_argument("--providencia", required=True); q.add_argument("--responsavel", default=""); q.add_argument("--fonte", choices=["congelado", "sync"], default="sync"); q.set_defaults(fn=cmd_create)
+    q = sub.add_parser("criar-tarefa"); q.add_argument("--cnj", required=True); q.add_argument("--referencia", required=True); q.add_argument("--providencia", required=True); q.add_argument("--responsavel", default=""); q.set_defaults(fn=cmd_create)
     q = sub.add_parser("listar"); q.add_argument("--status"); q.set_defaults(fn=cmd_list)
     q = sub.add_parser("assumir"); q.add_argument("id"); q.set_defaults(fn=cmd_claim)
     q = sub.add_parser("contexto"); q.add_argument("id"); q.set_defaults(fn=cmd_context)

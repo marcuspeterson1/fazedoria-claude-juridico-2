@@ -14,7 +14,7 @@ missing = [p for p in required if not (root / p).is_file()]
 if missing:
     raise SystemExit("Arquivos ausentes: " + ", ".join(missing))
 cfg = json.loads((root / "metodo-euro.json").read_text())
-assert cfg["modo"] == "sandbox"
+assert cfg["modo"] == "mvp"
 assert cfg["conectores"]["sync"]["somente_leitura"] is True
 assert cfg["conectores"]["sync"]["obrigatorio_metodo_euro"] is True
 assert cfg["fonte_autos"] == "sync"

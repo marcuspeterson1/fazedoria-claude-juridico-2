@@ -7,9 +7,9 @@ pessoa usa sua conta pessoal do GitHub e um clone próprio. O núcleo funciona s
 
 `Sync (autos, leitura) → fila GitHub → Controller → Advogado → revisão → proposta → skill`
 
-O Sync é obrigatório no Método Euro. O laboratório privado do professor pode usar cópias congeladas
-para não tocar em processos vivos. Infinitum e outros softwares jurídicos são opcionais. O modo
-inicial é sempre `sandbox`: permite leitura do Sync, mas bloqueia qualquer escrita externa.
+O Sync é obrigatório no Método Euro. Infinitum e outros softwares jurídicos são opcionais. O modo
+inicial é `mvp`: trabalha com tarefas reais e permite a leitura dos autos no Sync, mas mantém
+bloqueada qualquer escrita em sistemas externos.
 
 ## Instalação guiada — dois prompts
 
@@ -40,16 +40,15 @@ aqui para você enviar o convite ao repositório privado.
 Explique que o Sync é a fonte obrigatória dos autos. Abra uma caixa segura do próprio computador para
 eu cadastrar a chave do Sync sem digitá-la nesta conversa. Execute `configurar-sync` e `testar-sync`.
 Não coloque a chave no código de entrada: ela deve ser cadastrada separadamente em cada computador
-autorizado. Se eu disser que estou no laboratório privado do professor, preserve a fonte congelada e
-não peça nem use chave do Sync nesta rodada.
+autorizado.
 
 Crie automaticamente uma pasta local padrão para os casos. Instale e ative a sincronização em
 segundo plano. Antes de mostrar a fila, sincronize silenciosamente; depois de assumir, entregar,
 revisar ou criar uma tarefa/skill, salve e envie silenciosamente. Não ensine Git nem peça comandos.
 
 Explique conceitos com palavras simples, uma ação por vez e checkpoints curtos. Não solicite nem
-grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema externo durante
-este laboratório. Ao final, rode o diagnóstico e mostre apenas o que está pronto e qualquer ação
+grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema externo nesta
+etapa inicial. Ao final, rode o diagnóstico e mostre apenas o que está pronto e qualquer ação
 pessoal inevitável.
 ```
 
@@ -80,13 +79,12 @@ minha confirmação; depois retome nesta mesma conversa, clone o repositório e 
 Depois da entrada no escritório, explique que o Sync fornece os autos e precisa ser autorizado também
 neste computador. Peça que o Dono/Administrador acompanhe esta única etapa e abra a caixa segura local
 para ele cadastrar a chave sem mostrá-la ao colaborador e sem colocá-la na conversa. Execute
-`configurar-sync` e `testar-sync`. Se este for o laboratório privado do professor, use somente as
-cópias congeladas autorizadas e não conecte o Sync real.
+`configurar-sync` e `testar-sync`.
 
 Crie automaticamente a pasta local padrão para os casos, instale as skills e ative a sincronização em
 segundo plano. Sincronize silenciosamente antes de mostrar a fila e depois de cada alteração. Não me
 ensine Git nem peça comandos. Nunca solicite nem grave tokens na conversa ou no Git. Não habilite
-Infinitum nem escrita em sistema externo durante este laboratório. Ao final, rode o diagnóstico e
+Infinitum nem escrita em sistema externo nesta etapa inicial. Ao final, rode o diagnóstico e
 mostre apenas o que está pronto e qualquer ação pessoal inevitável.
 ```
 
@@ -110,14 +108,12 @@ ignorada pelo Git contendo a cronologia, os documentos textuais e um manifesto d
 escrito no Sync. Documento sem Markdown fica sinalizado para conferência do original; o Kit não finge
 que leu o que a API não entregou.
 
-O caminho `congelado` existe somente para laboratório e contingência. Em operação normal, toda tarefa
-nova usa `sync` por padrão.
+Toda tarefa nova usa o Sync como fonte dos autos.
 
 ## Fluxo operacional
 
 O primeiro computador executa `iniciar-escritorio`; o Dono usa `gerar-codigo --papel controller` ou
-`gerar-codigo --papel advogado`; os demais usam `entrar-com-codigo`. O comando
-antigo `configurar` permanece apenas para compatibilidade do laboratório atual. Depois:
+`gerar-codigo --papel advogado`; os demais usam `entrar-com-codigo`. Depois:
 
 - `python3 euro.py instalar-skills` liga a fonte canônica aos diretórios reconhecidos por Claude Code
   e Codex, preservando qualquer instalação preexistente.
@@ -137,7 +133,7 @@ para conciliação, sem apagar versões.
 
 - `diagnosticar`: todos os itens críticos aparecem como `OK`.
 - `listar`: o Advogado vê apenas tarefas destinadas a ele ou ainda disponíveis.
-- `contexto`: mostra exatamente uma pasta `entrada`; caminho contendo `gabarito` é recusado.
+- `contexto`: materializa uma pasta `entrada` privada com os autos obtidos do Sync.
 - `status`: registra autor, horário, transição e hash da entrega.
 - `promover-skill`: só aceita proposta de tarefa aprovada e nunca sobrescreve skill existente.
 
