@@ -5,9 +5,11 @@ O repositório público deste Kit é apenas o molde, sem dados. Durante a instal
 novo repositório **privado** para o escritório. Esse repositório privado é a fonte canônica; cada
 pessoa usa sua conta pessoal do GitHub e um clone próprio. O núcleo funciona sem software jurídico:
 
-`Sync/congelado (leitura) → fila GitHub → Controller → Advogado → revisão → proposta → skill`
+`Sync (autos, leitura) → fila GitHub → Controller → Advogado → revisão → proposta → skill`
 
-O Infinitum é opcional. O modo inicial é sempre `sandbox` e bloqueia efeitos externos.
+O Sync é obrigatório no Método Euro. O laboratório privado do professor pode usar cópias congeladas
+para não tocar em processos vivos. Infinitum e outros softwares jurídicos são opcionais. O modo
+inicial é sempre `sandbox`: permite leitura do Sync, mas bloqueia qualquer escrita externa.
 
 ## Instalação guiada — dois prompts
 
@@ -34,6 +36,12 @@ Ao final, pergunte se quero gerar código para Controller ou Advogado. Somente o
 códigos. Entregue o código e o Prompt 2 completo já com `SEU_CODIGO_ENTRADA` substituído. Explique que,
 quando o Claude do colaborador identificar o usuário GitHub dele, eu deverei informar esse usuário
 aqui para você enviar o convite ao repositório privado.
+
+Explique que o Sync é a fonte obrigatória dos autos. Abra uma caixa segura do próprio computador para
+eu cadastrar a chave do Sync sem digitá-la nesta conversa. Execute `configurar-sync` e `testar-sync`.
+Não coloque a chave no código de entrada: ela deve ser cadastrada separadamente em cada computador
+autorizado. Se eu disser que estou no laboratório privado do professor, preserve a fonte congelada e
+não peça nem use chave do Sync nesta rodada.
 
 Crie automaticamente uma pasta local padrão para os casos. Instale e ative a sincronização em
 segundo plano. Antes de mostrar a fila, sincronize silenciosamente; depois de assumir, entregar,
@@ -69,6 +77,12 @@ não tiver acesso ao repositório privado, mostre-o claramente para que o Dono e
 minha confirmação; depois retome nesta mesma conversa, clone o repositório e execute
 `entrar-com-codigo` sem pedir novamente dados já respondidos.
 
+Depois da entrada no escritório, explique que o Sync fornece os autos e precisa ser autorizado também
+neste computador. Peça que o Dono/Administrador acompanhe esta única etapa e abra a caixa segura local
+para ele cadastrar a chave sem mostrá-la ao colaborador e sem colocá-la na conversa. Execute
+`configurar-sync` e `testar-sync`. Se este for o laboratório privado do professor, use somente as
+cópias congeladas autorizadas e não conecte o Sync real.
+
 Crie automaticamente a pasta local padrão para os casos, instale as skills e ative a sincronização em
 segundo plano. Sincronize silenciosamente antes de mostrar a fila e depois de cada alteração. Não me
 ensine Git nem peça comandos. Nunca solicite nem grave tokens na conversa ou no Git. Não habilite
@@ -82,6 +96,22 @@ O código não é senha e não contém credencial. Ele carrega a identidade do e
 repositório privado e o papel Controller ou Advogado, com verificação contra alteração. O GitHub continua exigindo
 login pessoal e convite prévio para proteger os dados do escritório. Depois disso, o colaborador não
 digita novamente o nome do escritório nem escolhe seu papel.
+
+A chave do Sync deliberadamente não viaja no código. No estado atual do produto, ela é uma credencial
+do escritório: o Dono deve cadastrá-la uma vez em cada computador autorizado por uma caixa local com
+texto oculto. O Kit valida a conta antes de guardar a chave em arquivo privado fora do repositório.
+Ela nunca aparece na linha de comando, no Git, no prompt ou nos logs.
+
+## Autos pelo Sync
+
+Ao assumir uma tarefa cuja fonte é `sync`, o comando `contexto` usa o CNJ para paginar a cronologia
+integral e buscar o Markdown disponível de cada documento. Ele cria uma pasta `entrada` privada e
+ignorada pelo Git contendo a cronologia, os documentos textuais e um manifesto das lacunas. Nada é
+escrito no Sync. Documento sem Markdown fica sinalizado para conferência do original; o Kit não finge
+que leu o que a API não entregou.
+
+O caminho `congelado` existe somente para laboratório e contingência. Em operação normal, toda tarefa
+nova usa `sync` por padrão.
 
 ## Fluxo operacional
 

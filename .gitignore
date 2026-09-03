@@ -8,3 +8,4 @@ __pycache__/
 dist/
 ensaio/
 .metodo-euro-runtime/
+.metodo-euro-contextos/

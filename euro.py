@@ -12,8 +12,11 @@ import subprocess
 import sys
 import platform
 import uuid
+import getpass
 from datetime import datetime, timezone
 from pathlib import Path
+
+from conectores import sync as sync_connector
 
 ROOT = Path(__file__).resolve().parent
 LOCAL = ROOT / ".metodo-euro.local.json"
@@ -210,6 +213,7 @@ def cmd_diagnose(_a):
             (local_roles(local).issubset(VALID_ROLES) and bool(local_roles(local)), "papel local válido"),
             (local.get("agente") in VALID_AGENTS, "agente local válido"),
             (local.get("repositorio_privado_confirmado") is True, "repositório operacional privado confirmado"),
+            (shared.get("conectores", {}).get("sync", {}).get("somente_leitura") is True, "Sync limitado a somente leitura"),
         ]
     except (SystemExit, KeyError, json.JSONDecodeError):
         pass
@@ -270,8 +274,14 @@ def cmd_claim(a):
     print("OK — tarefa assumida:", a.id)
 
 def resolve_context(data, local):
+    if data["fonte"] == "sync":
+        destino = ROOT / ".metodo-euro-contextos" / data["id"] / "entrada"
+        try:
+            return sync_connector.materializar_entrada(data["cnj"], destino, local["organizacao_id"])
+        except RuntimeError as exc:
+            raise SystemExit(f"Não foi possível preparar os autos pelo Sync: {exc}")
     if data["fonte"] != "congelado":
-        raise SystemExit("Fonte externa requer conector próprio; nenhum acesso foi executado.")
+        raise SystemExit("Fonte de autos desconhecida; nenhum acesso foi executado.")
     root = local.get("raizes_entrada", {}).get("congelado")
     if not root:
         raise SystemExit("Raiz local das entradas congeladas não configurada.")
@@ -456,6 +466,48 @@ raise SystemExit(push.returncode)
 ''', encoding="utf-8")
         print("OK — instale internamente no LaunchAgents e valide uma execução:", plist)
 
+def _pedir_chave_sync():
+    """Recebe o segredo sem colocá-lo em argumento, Git ou texto da conversa."""
+    if os.getenv("METODO_EURO_SYNC_KEY"):
+        return os.environ["METODO_EURO_SYNC_KEY"]
+    if platform.system() == "Darwin":
+        script = 'display dialog "Cole a chave do Sync" default answer "" with hidden answer buttons {"Cancelar", "Salvar"} default button "Salvar"\ntext returned of result'
+        result = subprocess.run(["osascript", "-e", script], text=True, capture_output=True)
+        if result.returncode:
+            raise SystemExit("Configuração do Sync cancelada; nenhuma chave foi salva.")
+        return result.stdout.rstrip("\n")
+    if platform.system() == "Windows":
+        command = "$c=Get-Credential -UserName 'SYNC' -Message 'Cole a chave do Sync no campo de senha'; $c.GetNetworkCredential().Password"
+        result = subprocess.run(["powershell", "-NoProfile", "-Command", command], text=True, capture_output=True)
+        if result.returncode:
+            raise SystemExit("Configuração do Sync cancelada; nenhuma chave foi salva.")
+        return result.stdout.rstrip("\r\n")
+    return getpass.getpass("Chave do Sync (não será exibida): ")
+
+def cmd_configure_sync(_a):
+    local, shared = config()
+    if not shared.get("conectores", {}).get("sync", {}).get("somente_leitura"):
+        raise SystemExit("BLOQUEADO: o conector não está marcado como somente leitura.")
+    chave = _pedir_chave_sync()
+    cliente = sync_connector.ClienteSync(chave)
+    try:
+        conta = cliente.conta()
+    except RuntimeError as exc:
+        raise SystemExit(f"A chave não foi salva: {exc}")
+    if not conta.get("ativo") or not conta.get("acesso_liberado"):
+        raise SystemExit("A conta do Sync não está ativa/liberada; a chave não foi salva.")
+    sync_connector.salvar_chave(chave, local["organizacao_id"])
+    print("OK — Sync conectado em modo somente leitura para:", conta.get("conta") or "conta identificada")
+    print("OK — chave guardada somente neste computador, fora do Git e da conversa.")
+
+def cmd_test_sync(_a):
+    local, _shared = config()
+    try:
+        conta = sync_connector.ClienteSync(sync_connector.carregar_chave(local["organizacao_id"])).conta()
+    except RuntimeError as exc:
+        raise SystemExit(f"FALHA — Sync: {exc}")
+    print("OK — leitura do Sync autorizada para:", conta.get("conta") or "conta identificada")
+
 def parser():
     p = argparse.ArgumentParser(description="Kit 2 Método Euro — fila jurídica segura")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -465,7 +517,7 @@ def parser():
     q = sub.add_parser("decodificar-codigo"); q.add_argument("codigo"); q.set_defaults(fn=cmd_decode_invite)
     q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--raiz-entradas"); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
     q = sub.add_parser("diagnosticar"); q.set_defaults(fn=cmd_diagnose)
-    q = sub.add_parser("criar-tarefa"); q.add_argument("--cnj", required=True); q.add_argument("--referencia", required=True); q.add_argument("--providencia", required=True); q.add_argument("--responsavel", default=""); q.add_argument("--fonte", choices=["congelado", "sync"], default="congelado"); q.set_defaults(fn=cmd_create)
+    q = sub.add_parser("criar-tarefa"); q.add_argument("--cnj", required=True); q.add_argument("--referencia", required=True); q.add_argument("--providencia", required=True); q.add_argument("--responsavel", default=""); q.add_argument("--fonte", choices=["congelado", "sync"], default="sync"); q.set_defaults(fn=cmd_create)
     q = sub.add_parser("listar"); q.add_argument("--status"); q.set_defaults(fn=cmd_list)
     q = sub.add_parser("assumir"); q.add_argument("id"); q.set_defaults(fn=cmd_claim)
     q = sub.add_parser("contexto"); q.add_argument("id"); q.set_defaults(fn=cmd_context)
@@ -478,6 +530,8 @@ def parser():
     q = sub.add_parser("sincronizar"); q.set_defaults(fn=cmd_sync)
     q = sub.add_parser("instalar-skills"); q.add_argument("--destino-base"); q.set_defaults(fn=cmd_install_skills)
     q = sub.add_parser("preparar-auto-sync"); q.set_defaults(fn=cmd_prepare_auto_sync)
+    q = sub.add_parser("configurar-sync"); q.set_defaults(fn=cmd_configure_sync)
+    q = sub.add_parser("testar-sync"); q.set_defaults(fn=cmd_test_sync)
     return p
 
 if __name__ == "__main__":

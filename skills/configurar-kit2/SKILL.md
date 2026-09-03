@@ -22,3 +22,10 @@ CLI pelo navegador e identifique a conta ativa sem exibir tokens. Nunca peça to
 execute `instalar-skills` e `preparar-auto-sync`; instale o arquivo de
 agendamento gerado pelo mecanismo nativo do sistema, sem editar seu intervalo de dez minutos. Termine
 com `diagnosticar`, rode uma sincronização real de teste e traduza o resultado em checkpoints simples.
+
+O Sync é obrigatório como fonte de autos em operação. Em cada computador autorizado, abra a entrada
+segura nativa e execute `configurar-sync` sem receber a chave na conversa, argumento ou Git; valide
+com `testar-sync`. O código de entrada nunca transporta essa credencial. Quando o Advogado assumir
+tarefa de fonte `sync`, execute `contexto`: ele materializa localmente a cronologia e os Markdowns em
+pasta ignorada pelo Git. Use `congelado` somente no laboratório do professor ou em contingência
+expressamente indicada.

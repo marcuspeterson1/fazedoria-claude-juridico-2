@@ -16,6 +16,8 @@ if missing:
 cfg = json.loads((root / "metodo-euro.json").read_text())
 assert cfg["modo"] == "sandbox"
 assert cfg["conectores"]["sync"]["somente_leitura"] is True
+assert cfg["conectores"]["sync"]["obrigatorio_metodo_euro"] is True
+assert cfg["fonte_autos"] == "sync"
 assert cfg["conectores"]["infinitum"]["habilitado"] is False
 assert cfg["gates"]["protocolo_manual"] is True
 signatures = ("gh" + "p_", "github" + "_pat_", "sk-" + "ant-", "Bear" + "er ")

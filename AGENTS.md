@@ -7,12 +7,14 @@ O repositório público do Kit é apenas um molde. Nunca grave tarefa, CNJ, nome
 Antes de operar, crie/conecte um repositório privado do escritório e registre essa confirmação na
 configuração local. Sem a confirmação, `criar-tarefa` deve permanecer bloqueado.
 
-- Comece sempre em `sandbox`. Nesse modo, não escreva no Sync, Infinitum, Esteira, Meu Estagiário,
+- Comece sempre em `sandbox`. O Sync é a fonte obrigatória de autos do Método Euro e permanece
+  estritamente em leitura; nesse modo, não escreva no Sync, Infinitum, Esteira, Meu Estagiário,
   processo vivo ou qualquer sistema externo.
 - Autos são somente leitura. Nunca protocole. Revisão humana e protocolo são gates distintos.
 - O primeiro instalador é `dono`; somente ele nomeia Controllers e ele pode acumular `controller`.
 - O papel `controller` cria, distribui e revisa tarefas; `advogado` assume e entrega tarefas.
-- O Advogado usa apenas a entrada resolvida pelo comando `contexto`; nunca procure nem abra gabaritos.
+- O Advogado usa apenas a entrada resolvida pelo comando `contexto`. Em operação, ela é materializada
+  localmente pelo Sync; no laboratório do professor, pode vir dos casos congelados. Nunca abra gabaritos.
 - Segredos ficam na máquina, fora do Git e fora da conversa.
 - Sincronize antes e depois de alterar a fila. Se houver conflito, preserve as duas versões e peça
   conciliação; nunca resolva apagando trabalho.

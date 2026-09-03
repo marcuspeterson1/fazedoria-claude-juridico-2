@@ -7,6 +7,9 @@ from pathlib import Path
 SPEC = importlib.util.spec_from_file_location("euro", Path(__file__).parents[1] / "euro.py")
 euro = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(euro)
+SYNC_SPEC = importlib.util.spec_from_file_location("kit_sync", Path(__file__).parents[1] / "conectores" / "sync.py")
+kit_sync = importlib.util.module_from_spec(SYNC_SPEC)
+SYNC_SPEC.loader.exec_module(kit_sync)
 
 class EuroTests(unittest.TestCase):
     def test_gabarito_is_blocked(self):
@@ -52,6 +55,23 @@ class EuroTests(unittest.TestCase):
     def test_invite_requires_specific_role(self):
         parsed = euro.parser().parse_args(["gerar-codigo", "--papel", "advogado"])
         self.assertEqual(parsed.papel, "advogado")
+
+    def test_sync_materializes_chronology_and_markdown_locally(self):
+        class FakeSync:
+            def autos(self, _cnj):
+                return {"total": 2, "capa": {}, "autos": [
+                    {"tipo": "movimento", "data": "2026-01-01", "descricao": "Despacho"},
+                    {"tipo": "documento", "data": "2026-01-02", "id": 7,
+                     "nome": "decisão.pdf", "tipo_documento": "Decisão", "tem_markdown": True},
+                ]}
+            def markdown(self, documento_id):
+                return f"# Documento {documento_id}\n"
+        with tempfile.TemporaryDirectory() as d:
+            entrada = kit_sync.materializar_entrada("000", Path(d) / "entrada", "org", FakeSync())
+            self.assertTrue((entrada / "0000-CRONOLOGIA.md").is_file())
+            self.assertEqual(len(list(entrada.glob("*7*.md"))), 1)
+            manifesto = json.loads((entrada / "manifesto-sync.json").read_text())
+            self.assertEqual(manifesto["total"], 2)
 
     def test_tampered_invite_is_rejected(self):
         shared = {"nome_escritorio": "E", "organizacao": {"id": "1", "repositorio": "https://example.invalid/r"}}

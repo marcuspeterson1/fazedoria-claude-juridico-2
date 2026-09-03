@@ -3,9 +3,9 @@
   "nome_escritorio": "CONFIGURE-ME",
   "organizacao": null,
   "modo": "sandbox",
-  "fonte_autos": "congelado",
+  "fonte_autos": "sync",
   "conectores": {
-    "sync": {"habilitado": false, "somente_leitura": true},
+    "sync": {"habilitado": true, "obrigatorio_metodo_euro": true, "somente_leitura": true},
     "infinitum": {"habilitado": false}
   },
   "gates": {

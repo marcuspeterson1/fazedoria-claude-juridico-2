@@ -73,7 +73,7 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
 
     task_ids = []
     for index, (ref, cnj, providencia) in enumerate(CASES, 1):
-        task_id = run(controller, sys.executable, "euro.py", "criar-tarefa", "--cnj", cnj, "--referencia", ref, "--providencia", providencia, "--responsavel", "Advogada Dois", capture=True)
+        task_id = run(controller, sys.executable, "euro.py", "criar-tarefa", "--cnj", cnj, "--referencia", ref, "--providencia", providencia, "--responsavel", "Advogada Dois", "--fonte", "congelado", capture=True)
         task_ids.append(task_id)
         git(controller, "add", "fila"); git(controller, "commit", "-m", f"fila: caso {index}"); git(controller, "push")
         git(executor, "pull", "--rebase")
