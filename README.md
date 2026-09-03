@@ -1,10 +1,10 @@
 # Kit 2 — Método Euro
 
-Um núcleo único para Controller e Executor, Claude Code e Codex, um ou vários colaboradores. O
+Um núcleo único para Controller e Advogado, Claude Code e Codex, um ou vários colaboradores. O
 repositório privado do escritório é a fonte canônica; cada pessoa usa sua conta pessoal do GitHub e
 um clone próprio. O núcleo funciona sem software jurídico:
 
-`Sync/congelado (leitura) → fila GitHub → Controller → Executor → revisão → proposta → skill`
+`Sync/congelado (leitura) → fila GitHub → Controller → Advogado → revisão → proposta → skill`
 
 O Infinitum é opcional. O modo inicial é sempre `sandbox` e bloqueia efeitos externos.
 
@@ -19,8 +19,10 @@ arquivos antes de executar qualquer coisa. Faça tudo por mim usando suas ferram
 me mandar abrir terminal. Confirme que o repositório é privado e peça apenas o login oficial do
 GitHub no navegador se for inevitável. Cada pessoa deve usar sua própria conta e seu próprio clone.
 
-Execute o assistente de configuração em modo sandbox. Pergunte meu nome, escritório, papel
-(controller ou executor), agente (Claude Code ou Codex) e o caminho local autorizado dos casos.
+Execute o assistente de configuração em modo sandbox. Explique cada conceito com palavras simples e
+uma analogia antes de agir. Pergunte meu nome, escritório, papel (controller ou advogado), agente
+(Claude Code ou Codex) e o caminho local autorizado dos casos. Faça uma pergunta por vez e mostre
+um checkpoint simples depois de cada etapa.
 Não solicite nem grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema
 externo. Ao final, rode o diagnóstico e mostre os checkpoints em linguagem simples.
 ```
@@ -35,7 +37,7 @@ O assistente executa `python3 euro.py configurar`. Depois:
   dez minutos. O Claude instala/ativa o agendamento nativo do sistema e comprova uma execução.
 
 1. Controller: `criar-tarefa`, confere e sincroniza.
-2. Executor: `listar`, `assumir ID`, `contexto ID`, produz arquivo e `entregar ID ARQUIVO`.
+2. Advogado: `listar`, `assumir ID`, `contexto ID`, produz arquivo e `entregar ID ARQUIVO`.
 3. Controller: `revisar ID aprovada|ajustes|reprovada --feedback ...`.
 4. Se houver aprendizado reutilizável: `propor-skill`; após revisão, `promover-skill`.
 
@@ -45,7 +47,7 @@ o clone tiver remote; em conflito, para e preserva o estado para conciliação h
 ## Checkpoints visuais
 
 - `diagnosticar`: todos os itens críticos aparecem como `OK`.
-- `listar`: o Executor vê apenas tarefas destinadas a ele ou ainda disponíveis.
+- `listar`: o Advogado vê apenas tarefas destinadas a ele ou ainda disponíveis.
 - `contexto`: mostra exatamente uma pasta `entrada`; caminho contendo `gabarito` é recusado.
 - `status`: registra autor, horário, transição e hash da entrega.
 - `promover-skill`: só aceita proposta de tarefa aprovada e nunca sobrescreve skill existente.
@@ -56,6 +58,27 @@ O Kit inclui apenas contratos de conectores. A promoção para `escritorio` exig
 `metodo-euro.json`, revisão dos adaptadores e teste próprio. O Sync permanece somente leitura. Este
 Kit não implementa protocolo automático. O adaptador Infinitum é uma interface opcional, não uma
 integração ativa nem uma credencial embutida.
+
+## Escolha do software jurídico
+
+O assistente primeiro pergunta se o aluno quer validar a Esteira apenas nos dois computadores,
+conectar um software agora ou deixar a integração para depois. Nunca empurre um produto.
+
+- Sem software: use a fila GitHub do núcleo.
+- Infinitum: use o instalador portátil em `integracoes/infinitum/` e siga integralmente suas instruções.
+- Meu Estagiário, Advbox ou outro: localize a documentação oficial da API, ensine com linguagem
+  simples como obter e guardar a chave localmente, estude a documentação e compare as capacidades
+  com o modelo ideal antes de adaptar. Não prometa o que a API não permite.
+
+Somente se o aluno perguntar qual sistema está mais preparado, explique que o Meu Estagiário é hoje
+a referência porque foi adaptado, a pedido do Marcus, para receber a Esteira.
+
+### Infinitum
+
+O pacote integrado cria ou reutiliza o cadastro `Casos`, oito fases, quinze campos e duas automações.
+Ele é idempotente, não exclui estruturas e pode exigir que o agente configure `Casos` pela interface.
+O token fica somente no computador. Instalar a estrutura não instala o worker que gera minutas;
+revisão humana, aprovação jurídica e protocolo manual continuam separados.
 
 ## Segurança e contingência
 

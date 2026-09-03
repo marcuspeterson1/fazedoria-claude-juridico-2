@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 LOCAL = ROOT / ".metodo-euro.local.json"
 SHARED = ROOT / "metodo-euro.json"
-VALID_ROLES = {"controller", "executor"}
+VALID_ROLES = {"controller", "advogado"}
 VALID_AGENTS = {"claude", "codex"}
 TRANSITIONS = {
     "aberta": {"em_execucao"},
@@ -70,7 +70,7 @@ def transition(data, target):
 def safe_input_path(path):
     resolved = Path(path).expanduser().resolve()
     if "gabarito" in {part.lower() for part in resolved.parts}:
-        raise SystemExit("BLOQUEADO: o Executor não pode abrir caminho de gabarito.")
+        raise SystemExit("BLOQUEADO: o Advogado não pode abrir caminho de gabarito.")
     if resolved.name != "entrada" or not resolved.is_dir():
         raise SystemExit("Entrada inválida: o caminho deve terminar em uma pasta existente chamada 'entrada'.")
     return resolved
@@ -134,7 +134,7 @@ def cmd_create(a):
     print(task_id)
 
 def visible(data, local):
-    return local["papel"] == "controller" or not data.get("responsavel") or data.get("responsavel") == local["colaborador"] or data.get("executor") == local["colaborador"]
+    return local["papel"] == "controller" or not data.get("responsavel") or data.get("responsavel") == local["colaborador"] or data.get("advogado") == local["colaborador"]
 
 def cmd_list(a):
     local, _ = config()
@@ -148,12 +148,12 @@ def cmd_list(a):
         print(" | ".join(row))
 
 def cmd_claim(a):
-    local, _ = require_role("executor")
+    local, _ = require_role("advogado")
     data = task(a.id)
     if data.get("responsavel") and data["responsavel"] != local["colaborador"]:
         raise SystemExit("Tarefa destinada a outro colaborador.")
     transition(data, "em_execucao")
-    data["executor"] = local["colaborador"]
+    data["advogado"] = local["colaborador"]
     event(data, "assumida", local["colaborador"])
     save(task_path(a.id), data)
     print("OK — tarefa assumida:", a.id)
@@ -167,19 +167,19 @@ def resolve_context(data, local):
     return safe_input_path(Path(root) / data["referencia_entrada"] / "entrada")
 
 def cmd_context(a):
-    local, _ = require_role("executor")
+    local, _ = require_role("advogado")
     data = task(a.id)
-    if data.get("executor") != local["colaborador"]:
+    if data.get("advogado") != local["colaborador"]:
         raise SystemExit("Assuma a tarefa antes de abrir o contexto.")
     path = resolve_context(data, local)
     print("ENTRADA AUTORIZADA:", path)
     print("GABARITO: BLOQUEADO até entrega e revisão")
 
 def cmd_submit(a):
-    local, _ = require_role("executor")
+    local, _ = require_role("advogado")
     data = task(a.id)
-    if data.get("executor") != local["colaborador"]:
-        raise SystemExit("Tarefa não pertence a este Executor.")
+    if data.get("advogado") != local["colaborador"]:
+        raise SystemExit("Tarefa não pertence a este Advogado.")
     source = Path(a.arquivo).expanduser().resolve()
     if not source.is_file():
         raise SystemExit("Arquivo de entrega não encontrado.")
@@ -207,10 +207,10 @@ def cmd_review(a):
     print("OK — revisão registrada; aprovação não equivale a protocolo.")
 
 def cmd_reopen(a):
-    local, _ = require_role("executor")
+    local, _ = require_role("advogado")
     data = task(a.id)
-    if data.get("executor") != local["colaborador"]:
-        raise SystemExit("Tarefa não pertence a este Executor.")
+    if data.get("advogado") != local["colaborador"]:
+        raise SystemExit("Tarefa não pertence a este Advogado.")
     transition(data, "em_execucao")
     event(data, "ajustes_iniciados", local["colaborador"])
     save(task_path(a.id), data)

@@ -44,12 +44,12 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
     git(base, "clone", str(bare), str(controller))
     git(base, "clone", str(bare), str(executor))
     for clone, name, email in ((controller, "Marcus Controller", "controller@example.invalid"),
-                               (executor, "Executor Dois", "executor@example.invalid")):
+                               (executor, "Advogada Dois", "advogada@example.invalid")):
         git(clone, "config", "user.name", name); git(clone, "config", "user.email", email)
     run(controller, sys.executable, "euro.py", "configurar", "--nome", "Marcus", "--escritorio", "Laboratório Método Euro", "--papel", "controller", "--agente", "claude", "--raiz-entradas", str(lab))
     git(controller, "add", "metodo-euro.json"); git(controller, "commit", "-m", "configura escritório sandbox"); git(controller, "push")
     git(executor, "pull", "--rebase")
-    run(executor, sys.executable, "euro.py", "configurar", "--nome", "Executor Dois", "--escritorio", "Laboratório Método Euro", "--papel", "executor", "--agente", "codex", "--raiz-entradas", str(lab))
+    run(executor, sys.executable, "euro.py", "configurar", "--nome", "Advogada Dois", "--escritorio", "Laboratório Método Euro", "--papel", "advogado", "--agente", "claude", "--raiz-entradas", str(lab))
     links = base / "perfis"
     run(executor, sys.executable, "euro.py", "instalar-skills", "--destino-base", str(links))
     if not (links / ".claude/skills/executar-tarefa/SKILL.md").is_file() or not (links / ".agents/skills/executar-tarefa/SKILL.md").is_file():
@@ -62,7 +62,7 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
 
     task_ids = []
     for index, (ref, cnj, providencia) in enumerate(CASES, 1):
-        task_id = run(controller, sys.executable, "euro.py", "criar-tarefa", "--cnj", cnj, "--referencia", ref, "--providencia", providencia, "--responsavel", "Executor Dois", capture=True)
+        task_id = run(controller, sys.executable, "euro.py", "criar-tarefa", "--cnj", cnj, "--referencia", ref, "--providencia", providencia, "--responsavel", "Advogada Dois", capture=True)
         task_ids.append(task_id)
         git(controller, "add", "fila"); git(controller, "commit", "-m", f"fila: caso {index}"); git(controller, "push")
         git(executor, "pull", "--rebase")
