@@ -117,6 +117,8 @@ O primeiro computador executa `iniciar-escritorio`; o Dono usa `gerar-codigo --p
 
 - `python3 euro.py instalar-skills` liga a fonte canônica aos diretórios reconhecidos por Claude Code
   e Codex, preservando qualquer instalação preexistente.
+- A skill `resumo-do-processo` transforma os autos obtidos no Sync em um resumo jurídico padronizado
+  antes da escolha e execução da peça.
 - `python3 euro.py preparar-auto-sync` cria os arquivos locais para sincronização conservadora a cada
   dez minutos. O Claude instala/ativa o agendamento nativo do sistema e comprova uma execução.
 
