@@ -46,10 +46,10 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
     for clone, name, email in ((controller, "Marcus Controller", "controller@example.invalid"),
                                (executor, "Advogada Dois", "advogada@example.invalid")):
         git(clone, "config", "user.name", name); git(clone, "config", "user.email", email)
-    run(controller, sys.executable, "euro.py", "configurar", "--nome", "Marcus", "--escritorio", "Laboratório Método Euro", "--papel", "controller", "--agente", "claude", "--raiz-entradas", str(lab))
+    run(controller, sys.executable, "euro.py", "configurar", "--nome", "Marcus", "--escritorio", "Laboratório Método Euro", "--papel", "controller", "--agente", "claude", "--raiz-entradas", str(lab), "--repositorio-privado-confirmado")
     git(controller, "add", "metodo-euro.json"); git(controller, "commit", "-m", "configura escritório sandbox"); git(controller, "push")
     git(executor, "pull", "--rebase")
-    run(executor, sys.executable, "euro.py", "configurar", "--nome", "Advogada Dois", "--escritorio", "Laboratório Método Euro", "--papel", "advogado", "--agente", "claude", "--raiz-entradas", str(lab))
+    run(executor, sys.executable, "euro.py", "configurar", "--nome", "Advogada Dois", "--escritorio", "Laboratório Método Euro", "--papel", "advogado", "--agente", "claude", "--raiz-entradas", str(lab), "--repositorio-privado-confirmado")
     links = base / "perfis"
     run(executor, sys.executable, "euro.py", "instalar-skills", "--destino-base", str(links))
     if not (links / ".claude/skills/executar-tarefa/SKILL.md").is_file() or not (links / ".agents/skills/executar-tarefa/SKILL.md").is_file():

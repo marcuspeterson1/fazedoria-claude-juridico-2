@@ -1,7 +1,9 @@
 # Kit 2 — Método Euro
 
 Um núcleo único para Controller e Advogado, Claude Code e Codex, um ou vários colaboradores. O
-repositório privado do escritório é a fonte canônica; cada pessoa usa sua conta pessoal do GitHub e
+O repositório público deste Kit é apenas o molde, sem dados. Durante a instalação, o Claude cria um
+novo repositório **privado** para o escritório. Esse repositório privado é a fonte canônica; cada
+pessoa usa sua conta pessoal do GitHub e
 um clone próprio. O núcleo funciona sem software jurídico:
 
 `Sync/congelado (leitura) → fila GitHub → Controller → Advogado → revisão → proposta → skill`
@@ -14,17 +16,20 @@ Abra Claude Code na pasta permanente `Claude` e envie o texto abaixo. O aluno n�
 Terminal ou PowerShell.
 
 ```text
-Instale o Kit 2 do Método Euro a partir do repositório informado pelo professor. Leia e audite os
-arquivos antes de executar qualquer coisa. Faça tudo por mim usando suas ferramentas internas, sem
-me mandar abrir terminal. Confirme que o repositório é privado e peça apenas o login oficial do
-GitHub no navegador se for inevitável. Cada pessoa deve usar sua própria conta e seu próprio clone.
+Instale o Kit 2 do Método Euro a partir do repositório público informado pelo professor. Leia e
+audite os arquivos antes de executar qualquer coisa. Faça tudo por mim usando suas ferramentas
+internas, sem me mandar abrir terminal. Explique que o repositório público é apenas um molde. Crie
+para meu escritório um novo repositório privado, copie o Kit para ele e confirme pela configuração
+do GitHub que está privado antes de cadastrar qualquer caso ou tarefa. Peça apenas o login oficial
+do GitHub no navegador se for inevitável. Cada pessoa usa sua própria conta e seu próprio clone.
 
 Execute o assistente de configuração em modo sandbox. Explique cada conceito com palavras simples e
 uma analogia antes de agir. Pergunte meu nome, escritório, papel (controller ou advogado), agente
 (Claude Code ou Codex) e o caminho local autorizado dos casos. Faça uma pergunta por vez e mostre
 um checkpoint simples depois de cada etapa.
 Não solicite nem grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema
-externo. Ao final, rode o diagnóstico e mostre os checkpoints em linguagem simples.
+externo. Configure com a confirmação de repositório privado. Ao final, rode o diagnóstico e mostre
+os checkpoints em linguagem simples.
 ```
 
 ## Fluxo operacional

@@ -5,7 +5,9 @@ description: Configura uma bancada segura do Kit 2 Método Euro para Controller 
 
 # Configurar Kit 2
 
-Leia `README.md`, audite o repositório e confirme que ele é privado antes de dados do escritório.
+Leia `README.md` e audite o repositório público, que é apenas o molde. Crie um novo repositório
+privado do escritório, copie o Kit para ele e confirme no GitHub que está privado antes de qualquer
+dado. Só então use `--repositorio-privado-confirmado` na configuração local.
 Conduza como tutor de iniciante absoluto: uma pergunta e uma ação por vez, analogias simples,
 explicação do motivo, checkpoint visual e correção paciente dos erros, sem infantilizar a pessoa.
 Execute `python3 euro.py configurar` internamente. Comece em sandbox. Solicite somente nome,

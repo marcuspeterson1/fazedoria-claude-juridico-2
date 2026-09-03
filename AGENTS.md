@@ -3,6 +3,10 @@
 Este repositório é a fonte canônica compartilhada de regras, skills e fila. Leia `README.md`,
 `metodo-euro.json` e a configuração local antes de agir.
 
+O repositório público do Kit é apenas um molde. Nunca grave tarefa, CNJ, nome ou documento nele.
+Antes de operar, crie/conecte um repositório privado do escritório e registre essa confirmação na
+configuração local. Sem a confirmação, `criar-tarefa` deve permanecer bloqueado.
+
 - Comece sempre em `sandbox`. Nesse modo, não escreva no Sync, Infinitum, Esteira, Meu Estagiário,
   processo vivo ou qualquer sistema externo.
 - Autos são somente leitura. Nunca protocole. Revisão humana e protocolo são gates distintos.

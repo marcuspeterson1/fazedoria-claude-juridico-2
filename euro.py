@@ -85,7 +85,8 @@ def cmd_configure(a):
             raise SystemExit("Raiz de entradas não existe.")
         roots["congelado"] = str(root)
     data = {"schema_version": 1, "colaborador": a.nome, "papel": a.papel,
-            "agente": a.agente, "raizes_entrada": roots, "configurado_em": now()}
+            "agente": a.agente, "repositorio_privado_confirmado": a.repositorio_privado_confirmado,
+            "raizes_entrada": roots, "configurado_em": now()}
     save(LOCAL, data)
     shared = load(SHARED)
     if shared["nome_escritorio"] == "CONFIGURE-ME" and a.escritorio:
@@ -104,6 +105,7 @@ def cmd_diagnose(_a):
             (shared.get("gates", {}).get("protocolo_manual") is True, "protocolo continua manual"),
             (local.get("papel") in VALID_ROLES, "papel local válido"),
             (local.get("agente") in VALID_AGENTS, "agente local válido"),
+            (local.get("repositorio_privado_confirmado") is True, "repositório operacional privado confirmado"),
         ]
     except (SystemExit, KeyError, json.JSONDecodeError):
         pass
@@ -120,6 +122,8 @@ def slug(value):
 
 def cmd_create(a):
     local, shared = require_role("controller")
+    if local.get("repositorio_privado_confirmado") is not True:
+        raise SystemExit("BLOQUEADO: crie/conecte e confirme o repositório privado antes de registrar tarefas.")
     if shared["modo"] != "sandbox" and a.fonte == "congelado":
         raise SystemExit("Fonte congelada é destinada ao sandbox.")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -343,7 +347,7 @@ raise SystemExit(push.returncode)
 def parser():
     p = argparse.ArgumentParser(description="Kit 2 Método Euro — fila jurídica segura")
     sub = p.add_subparsers(dest="cmd", required=True)
-    q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--raiz-entradas"); q.set_defaults(fn=cmd_configure)
+    q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--raiz-entradas"); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
     q = sub.add_parser("diagnosticar"); q.set_defaults(fn=cmd_diagnose)
     q = sub.add_parser("criar-tarefa"); q.add_argument("--cnj", required=True); q.add_argument("--referencia", required=True); q.add_argument("--providencia", required=True); q.add_argument("--responsavel", default=""); q.add_argument("--fonte", choices=["congelado", "sync"], default="congelado"); q.set_defaults(fn=cmd_create)
     q = sub.add_parser("listar"); q.add_argument("--status"); q.set_defaults(fn=cmd_list)

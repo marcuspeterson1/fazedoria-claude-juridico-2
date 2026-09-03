@@ -33,6 +33,10 @@ class EuroTests(unittest.TestCase):
             euro.transition(data, state)
         self.assertEqual(data["status"], "aprovada")
 
+    def test_private_confirmation_is_explicit(self):
+        parsed = euro.parser().parse_args(["configurar", "--nome", "A", "--escritorio", "E", "--papel", "advogado", "--agente", "claude"])
+        self.assertFalse(parsed.repositorio_privado_confirmado)
+
     def test_skill_link_preserves_existing(self):
         with tempfile.TemporaryDirectory() as d:
             source = Path(d) / "source"; source.mkdir()
