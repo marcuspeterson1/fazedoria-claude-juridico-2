@@ -44,6 +44,7 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
                                (executor, "Advogada Dois", "advogada@example.invalid")):
         git(clone, "config", "user.name", name); git(clone, "config", "user.email", email)
     run(controller, sys.executable, "euro.py", "iniciar-escritorio", "--nome", "Dono Exemplo", "--escritorio", "Escritório Exemplo", "--agente", "claude", "--repositorio", str(bare), "--tambem-controller")
+    run(controller, sys.executable, "euro.py", "configurar-documentos", "--onde-modelos", "Pasta de modelos aprovados", "--pastas-clientes", "sim", "--destino-copia", "Pasta do cliente", "--padrao-nomes", "TIPO - CLIENTE - DATA")
     git(controller, "add", "metodo-euro.json"); git(controller, "commit", "-m", "configura escritório"); git(controller, "push")
     invite = run(controller, sys.executable, "euro.py", "gerar-codigo", "--papel", "advogado", capture=True)
     git(executor, "pull", "--rebase")
@@ -67,7 +68,7 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
         run(executor, sys.executable, "euro.py", "assumir", task_id)
         draft = base / f"minuta-{index}.md"
         draft.write_text(f"<!-- RASCUNHO: NÃO PROTOCOLAR -->\n# Rodada {index}\n\nProvidência sugerida sujeita a revisão: {providencia}.\n", encoding="utf-8")
-        run(executor, sys.executable, "euro.py", "entregar", task_id, str(draft))
+        run(executor, sys.executable, "euro.py", "entregar", task_id, str(draft), "--modelo", "modelo-aprovado.docx", "--copia-destino", draft.name)
         git(executor, "add", "fila", "entregas"); git(executor, "commit", "-m", f"executor: entrega caso {index}"); git(executor, "push")
         git(controller, "pull", "--rebase")
         run(controller, sys.executable, "euro.py", "revisar", task_id, "aprovada", "--feedback", f"Rodada técnica {index} aprovada.")

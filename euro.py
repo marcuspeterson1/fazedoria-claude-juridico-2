@@ -188,6 +188,31 @@ def cmd_join(a):
     print("Papel:", papel.title(), "| Dono/Administrador:", org.get("dono"))
     print_daily_card(local)
 
+def cmd_configure_documents(a):
+    local, shared = config()
+    if "dono" not in local_roles(local):
+        raise SystemExit("Somente o Dono/Administrador define o padrão documental do escritório.")
+    shared["producao_documental"] = {
+        "modelo_obrigatorio": True,
+        "onde_ficam_modelos": a.onde_modelos,
+        "pastas_clientes_existem": a.pastas_clientes == "sim",
+        "destino_da_copia": a.destino_copia,
+        "padrao_nomes": a.padrao_nomes,
+        "preservar_identidade_visual": True,
+        "preservar_topicos_aplicaveis": True,
+        "configurado_por": local["colaborador"],
+        "configurado_em": now(),
+    }
+    save(SHARED, shared)
+    if a.caminho_local_modelos:
+        local.setdefault("producao_documental_local", {})["caminho_modelos"] = a.caminho_local_modelos
+    if a.caminho_local_clientes:
+        local.setdefault("producao_documental_local", {})["caminho_clientes"] = a.caminho_local_clientes
+    save(LOCAL, local)
+    auto_git([str(SHARED.relative_to(ROOT))], "config: registrar padrão documental do escritório")
+    print("OK — padrão documental compartilhado registrado.")
+    print("OK — caminhos desta máquina ficaram somente na configuração local, fora do Git.")
+
 def cmd_invite(a):
     _local, shared = require_role("dono")
     if not (shared.get("organizacao") or {}).get("id"):
@@ -213,6 +238,10 @@ def cmd_diagnose(_a):
             (local.get("agente") in VALID_AGENTS, "agente local válido"),
             (local.get("repositorio_privado_confirmado") is True, "repositório operacional privado confirmado"),
             (shared.get("conectores", {}).get("sync", {}).get("somente_leitura") is True, "Sync limitado a somente leitura"),
+            (shared.get("producao_documental", {}).get("modelo_obrigatorio") is True, "petição exige modelo aprovado"),
+            (shared.get("producao_documental", {}).get("onde_ficam_modelos") not in (None, "", "CONFIGURE-ME"), "localização dos modelos definida pelo Dono"),
+            (shared.get("producao_documental", {}).get("destino_da_copia") not in (None, "", "CONFIGURE-ME"), "destino da cópia definido pelo Dono"),
+            (shared.get("producao_documental", {}).get("padrao_nomes") not in (None, "", "CONFIGURE-ME"), "padrão de nomes definido pelo Dono"),
         ]
     except (SystemExit, KeyError, json.JSONDecodeError):
         pass
@@ -294,13 +323,18 @@ def cmd_submit(a):
     source = Path(a.arquivo).expanduser().resolve()
     if not source.is_file():
         raise SystemExit("Arquivo de entrega não encontrado.")
+    _local_cfg, shared = config()
+    policy = shared.get("producao_documental") or {}
+    if policy.get("modelo_obrigatorio", True) and (not a.modelo or not a.copia_destino):
+        raise SystemExit("BLOQUEADO: informe o modelo aprovado copiado e o destino da cópia. A peça não pode nascer em branco.")
     target_dir = ROOT / "entregas" / a.id
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / source.name
     target.write_bytes(source.read_bytes())
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
     transition(data, "entregue")
-    data["entrega"] = {"arquivo": str(target.relative_to(ROOT)), "sha256": digest, "em": now(), "por": local["colaborador"]}
+    data["entrega"] = {"arquivo": str(target.relative_to(ROOT)), "sha256": digest, "em": now(), "por": local["colaborador"],
+                       "modelo_utilizado": a.modelo, "copia_destino": a.copia_destino}
     event(data, "entregue", local["colaborador"], f"sha256:{digest}")
     save(task_path(a.id), data)
     auto_git([f"fila/{a.id}.json", f"entregas/{a.id}"], f"fila: entregar {a.id}")
@@ -508,6 +542,7 @@ def parser():
     sub = p.add_subparsers(dest="cmd", required=True)
     q = sub.add_parser("iniciar-escritorio"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.add_argument("--repositorio", default=""); q.add_argument("--tambem-controller", action="store_true"); q.set_defaults(fn=cmd_start_office)
     q = sub.add_parser("entrar-com-codigo"); q.add_argument("codigo"); q.add_argument("--nome", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.set_defaults(fn=cmd_join)
+    q = sub.add_parser("configurar-documentos"); q.add_argument("--onde-modelos", required=True); q.add_argument("--pastas-clientes", choices=["sim", "nao"], required=True); q.add_argument("--destino-copia", required=True); q.add_argument("--padrao-nomes", required=True); q.add_argument("--caminho-local-modelos", default=""); q.add_argument("--caminho-local-clientes", default=""); q.set_defaults(fn=cmd_configure_documents)
     q = sub.add_parser("gerar-codigo"); q.add_argument("--papel", choices=["advogado", "controller"], required=True); q.set_defaults(fn=cmd_invite)
     q = sub.add_parser("decodificar-codigo"); q.add_argument("codigo"); q.set_defaults(fn=cmd_decode_invite)
     q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
@@ -516,7 +551,7 @@ def parser():
     q = sub.add_parser("listar"); q.add_argument("--status"); q.set_defaults(fn=cmd_list)
     q = sub.add_parser("assumir"); q.add_argument("id"); q.set_defaults(fn=cmd_claim)
     q = sub.add_parser("contexto"); q.add_argument("id"); q.set_defaults(fn=cmd_context)
-    q = sub.add_parser("entregar"); q.add_argument("id"); q.add_argument("arquivo"); q.set_defaults(fn=cmd_submit)
+    q = sub.add_parser("entregar"); q.add_argument("id"); q.add_argument("arquivo"); q.add_argument("--modelo", required=True); q.add_argument("--copia-destino", required=True); q.set_defaults(fn=cmd_submit)
     q = sub.add_parser("revisar"); q.add_argument("id"); q.add_argument("decisao", choices=["aprovada", "ajustes", "reprovada"]); q.add_argument("--feedback", required=True); q.set_defaults(fn=cmd_review)
     q = sub.add_parser("iniciar-ajustes"); q.add_argument("id"); q.set_defaults(fn=cmd_reopen)
     q = sub.add_parser("propor-skill"); q.add_argument("id"); q.add_argument("--nome", required=True); q.add_argument("--arquivo", required=True); q.set_defaults(fn=cmd_propose)

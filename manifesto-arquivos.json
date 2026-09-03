@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "versao": "2.1.0",
+  "gerenciados_pelo_kit": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "README.md",
+    "euro.py",
+    "conectores/",
+    "integracoes/",
+    "modelos/",
+    "skills/configurar-kit2/",
+    "skills/controller-fila/",
+    "skills/executar-tarefa/",
+    "skills/resumo-do-processo/",
+    "skills/revisar-entrega/",
+    "skills/evoluir-skill/",
+    "skills/gerar-peticao-por-modelo/",
+    "skills/atualizar-kit/",
+    "tests/",
+    "versao-kit.json",
+    "manifesto-arquivos.json"
+  ],
+  "mesclar_sem_apagar": [
+    "metodo-euro.json"
+  ],
+  "preservar_sempre": [
+    ".metodo-euro.local.json",
+    ".metodo-euro-contextos/",
+    ".metodo-euro-runtime/",
+    ".env",
+    "fila/",
+    "entregas/",
+    "propostas/",
+    "skills criadas ou personalizadas pelo escritório"
+  ]
+}

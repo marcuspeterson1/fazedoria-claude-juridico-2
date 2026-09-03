@@ -4,6 +4,16 @@
   "organizacao": null,
   "modo": "mvp",
   "fonte_autos": "sync",
+  "versao_kit": "2.1.0",
+  "producao_documental": {
+    "modelo_obrigatorio": true,
+    "onde_ficam_modelos": "CONFIGURE-ME",
+    "pastas_clientes_existem": null,
+    "destino_da_copia": "CONFIGURE-ME",
+    "padrao_nomes": "CONFIGURE-ME",
+    "preservar_identidade_visual": true,
+    "preservar_topicos_aplicaveis": true
+  },
   "conectores": {
     "sync": {"habilitado": true, "obrigatorio_metodo_euro": true, "somente_leitura": true},
     "infinitum": {"habilitado": false}

@@ -28,6 +28,10 @@ usando suas ferramentas internas, sem me mandar abrir terminal. Instale silencio
 pré-requisitos oficiais e seguros que faltarem, inclusive Python 3, sem me pedir para escolher o
 método. Só me interrompa para login oficial no GitHub ou decisão pessoal realmente inevitável.
 
+Antes de instalar, verifique se este Kit já existe e está configurado neste computador. Se existir,
+não recomece: use a skill `atualizar-kit`, compare a versão pública com a instalada e aplique somente
+as novidades, preservando escritório, pessoas, fila, entregas, skills, caminhos e credenciais.
+
 Estou criando o escritório. Peça somente meu nome e o nome do escritório. Crie um novo repositório
 privado, copie o Kit, confirme no GitHub que está privado e execute `iniciar-escritorio`. Registre-me
 como Dono/Administrador e pergunte se também trabalharei como Controller.
@@ -41,6 +45,14 @@ Explique que o Sync é a fonte obrigatória dos autos. Abra uma caixa segura do 
 eu cadastrar a chave do Sync sem digitá-la nesta conversa. Execute `configurar-sync` e `testar-sync`.
 Não coloque a chave no código de entrada: ela deve ser cadastrada separadamente em cada computador
 autorizado.
+
+Configure comigo o padrão de documentos do escritório, uma pergunta por vez: onde ficam os modelos
+aprovados; onde ficam as pastas dos clientes, se existirem; se a cópia do modelo deve ser salva na
+pasta do cliente ou em outro lugar; e qual é o padrão de nomes dos arquivos. Registre as regras
+compartilhadas com `configurar-documentos`, mas guarde caminhos específicos desta máquina somente na
+configuração local. Explique que toda petição deve nascer de uma cópia de modelo aprovado para
+preservar logomarca, timbre, cabeçalho, rodapé, formatação e tópicos jurídicos validados. Nunca altere
+o modelo original. Se não houver modelo adequado, peça que eu indique ou envie um antes de redigir.
 
 Crie automaticamente uma pasta local padrão para os casos. Instale e ative a sincronização em
 segundo plano. Antes de mostrar a fila, sincronize silenciosamente; depois de assumir, entregar,
@@ -66,6 +78,11 @@ Leia e audite os arquivos antes de executar qualquer coisa. Faça tudo por mim u
 internas, sem me mandar abrir Terminal, PowerShell ou Prompt de Comando. Conduza como se eu nunca
 tivesse ouvido falar em GitHub: explique com palavras simples, uma ação por vez e checkpoints curtos.
 
+Antes de instalar, verifique se este Kit já existe e está configurado neste computador. Se existir,
+não recomece nem peça novamente o código: use a skill `atualizar-kit`, compare a versão pública com a
+instalada e aplique somente as novidades, preservando escritório, papel, fila, entregas, skills,
+caminhos e credenciais.
+
 Se eu ainda não tiver conta no GitHub, abra a página oficial de cadastro no navegador e acompanhe o
 passo a passo. Eu mesmo preencherei senha, confirmação de e-mail, captcha e autenticação. Depois faça
 o login oficial pelo navegador e identifique automaticamente meu nome de usuário, sem mostrar token.
@@ -80,6 +97,12 @@ Depois da entrada no escritório, explique que o Sync fornece os autos e precisa
 neste computador. Peça que o Dono/Administrador acompanhe esta única etapa e abra a caixa segura local
 para ele cadastrar a chave sem mostrá-la ao colaborador e sem colocá-la na conversa. Execute
 `configurar-sync` e `testar-sync`.
+
+Leia o padrão documental que o Dono já registrou. Não me pergunte novamente regras compartilhadas.
+Ajude-me apenas a localizar, neste computador, os modelos e as pastas autorizadas, guardando esses
+caminhos somente na configuração local. Explique que toda petição nasce de uma cópia de modelo
+aprovado, nunca de documento vazio, para preservar o jeito do escritório. Se nenhum modelo estiver
+disponível, peça que eu indique ou envie um e aguarde antes de redigir.
 
 Crie automaticamente a pasta local padrão para os casos, instale as skills e ative a sincronização em
 segundo plano. Sincronize silenciosamente antes de mostrar a fila e depois de cada alteração. Não me
@@ -120,11 +143,14 @@ O primeiro computador executa `iniciar-escritorio`; o Dono usa `gerar-codigo --p
   e Codex, preservando qualquer instalação preexistente.
 - A skill `resumo-do-processo` transforma os autos obtidos no Sync em um resumo jurídico padronizado
   antes da escolha e execução da peça.
+- A skill `gerar-peticao-por-modelo` copia o modelo aprovado, preserva a identidade visual e mantém
+  apenas os tópicos jurídicos aplicáveis, com registro do modelo e do destino da cópia.
 - `python3 euro.py preparar-auto-sync` cria os arquivos locais para sincronização conservadora a cada
   dez minutos. O Claude instala/ativa o agendamento nativo do sistema e comprova uma execução.
 
 1. Controller: `criar-tarefa`, confere e sincroniza.
-2. Advogado: `listar`, `assumir ID`, `contexto ID`, produz arquivo e `entregar ID ARQUIVO`.
+2. Advogado: `listar`, `assumir ID`, `contexto ID`, copia o modelo aprovado, produz a peça e usa
+   `entregar ID ARQUIVO --modelo IDENTIFICAÇÃO --copia-destino DESTINO`.
 3. Controller: `revisar ID aprovada|ajustes|reprovada --feedback ...`.
 4. Se houver aprendizado reutilizável: `propor-skill`; após revisão, `promover-skill`.
 
@@ -150,6 +176,14 @@ Advogado:
 ```
 
 O instalador e o diagnóstico repetem automaticamente a orientação correspondente ao papel local.
+
+## Atualizações sem reinstalar
+
+Os mesmos prompts podem ser usados novamente quando houver versão nova. O Claude deve perceber que o
+escritório já está configurado e executar `atualizar-kit`: compara `versao-kit.json` e
+`manifesto-arquivos.json`, traz somente arquivos oficiais novos ou alterados e preserva dados do
+escritório, fila, entregas, propostas, skills próprias, caminhos locais e credenciais. Havendo
+personalização conflitante em arquivo oficial, mantém as duas versões para decisão do Dono.
 
 ## Checkpoints visuais
 

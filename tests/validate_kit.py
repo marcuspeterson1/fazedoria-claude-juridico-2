@@ -9,6 +9,8 @@ required = ["README.md", "AGENTS.md", "CLAUDE.md", "euro.py", "metodo-euro.json"
             "skills/configurar-kit2/SKILL.md", "skills/controller-fila/SKILL.md",
             "skills/executar-tarefa/SKILL.md", "skills/revisar-entrega/SKILL.md",
             "skills/evoluir-skill/SKILL.md", "skills/resumo-do-processo/SKILL.md",
+            "skills/gerar-peticao-por-modelo/SKILL.md", "skills/atualizar-kit/SKILL.md",
+            "versao-kit.json", "manifesto-arquivos.json",
             "integracoes/infinitum/Instalador-Esteira-Peticoes-Infinitum-v1.0.0.zip",
             "integracoes/infinitum/Instalador-Esteira-Peticoes-Infinitum-v1.0.0.zip.sha256"]
 missing = [p for p in required if not (root / p).is_file()]

@@ -20,5 +20,10 @@ configuração local. Sem a confirmação, `criar-tarefa` deve permanecer bloque
 - Uma revisão não muda uma skill automaticamente. Registre a proposta; somente o Controller promove
   aprendizado reutilizável após distinguir erro de execução, deficiência da skill e peculiaridade.
 - Em caso de dúvida factual, declare a lacuna. Não invente movimento, documento, prazo ou estratégia.
+- Toda petição nasce de uma cópia de modelo aprovado do escritório. Use `gerar-peticao-por-modelo`;
+  nunca redija em documento vazio nem altere o modelo-mãe. Sem modelo, peça que o usuário indique ou
+  envie um antes de redigir.
+- Se este Kit já estiver configurado e o usuário repetir um prompt de instalação, use `atualizar-kit`:
+  aplique somente novidades oficiais e preserve identidade, fila, entregas, skills locais e segredos.
 
 As mesmas regras valem no Claude Code (`CLAUDE.md`) e no Codex (`AGENTS.md`).

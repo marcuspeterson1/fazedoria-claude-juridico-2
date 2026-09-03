@@ -45,6 +45,14 @@ class EuroTests(unittest.TestCase):
         parsed = euro.parser().parse_args(["gerar-codigo", "--papel", "advogado"])
         self.assertEqual(parsed.papel, "advogado")
 
+    def test_document_policy_is_owner_command(self):
+        parsed = euro.parser().parse_args(["configurar-documentos", "--onde-modelos", "Drive", "--pastas-clientes", "sim", "--destino-copia", "Pasta do cliente", "--padrao-nomes", "TIPO - CLIENTE"])
+        self.assertEqual(parsed.onde_modelos, "Drive")
+
+    def test_delivery_requires_model_traceability(self):
+        with self.assertRaises(SystemExit):
+            euro.parser().parse_args(["entregar", "tarefa", "minuta.docx"])
+
     def test_daily_card_is_role_specific(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
