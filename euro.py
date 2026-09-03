@@ -154,9 +154,11 @@ def cmd_start_office(a):
                                  "repositorio": a.repositorio or repo_url(), "criada_em": now()}
         if not shared["organizacao"]["repositorio"]: raise SystemExit("Repositório privado não identificado.")
         save(SHARED, shared)
+    previous = load(LOCAL) if LOCAL.exists() else {}
     local = {"schema_version": 1, "colaborador": a.nome, "papel": "controller", "agente": a.agente,
              "repositorio_privado_confirmado": True, "sincronizacao_automatica": True,
-             "organizacao_id": shared["organizacao"]["id"], "raizes_entrada": {}, "configurado_em": now()}
+             "organizacao_id": shared["organizacao"]["id"],
+             "raizes_entrada": previous.get("raizes_entrada", {}), "configurado_em": now()}
     save(LOCAL, local)
     auto_git([str(SHARED.relative_to(ROOT))], "config: iniciar escritório e congelar Controller")
     print("CÓDIGO DE ENTRADA DO ESCRITÓRIO:")
