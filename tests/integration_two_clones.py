@@ -48,10 +48,19 @@ with tempfile.TemporaryDirectory(prefix="metodo-euro-ensaio-") as tmp:
     for clone, name, email in ((controller, "Marcus Controller", "controller@example.invalid"),
                                (executor, "Advogada Dois", "advogada@example.invalid")):
         git(clone, "config", "user.name", name); git(clone, "config", "user.email", email)
-    run(controller, sys.executable, "euro.py", "configurar", "--nome", "Marcus", "--escritorio", "Laboratório Método Euro", "--papel", "controller", "--agente", "claude", "--raiz-entradas", str(lab), "--repositorio-privado-confirmado")
+    run(controller, sys.executable, "euro.py", "iniciar-escritorio", "--nome", "Marcus", "--escritorio", "Laboratório Método Euro", "--agente", "claude", "--repositorio", str(bare), "--tambem-controller")
+    owner_local_path = controller / ".metodo-euro.local.json"
+    owner_local = json.loads(owner_local_path.read_text(encoding="utf-8"))
+    owner_local["raizes_entrada"] = {"congelado": str(lab)}
+    owner_local_path.write_text(json.dumps(owner_local, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     git(controller, "add", "metodo-euro.json"); git(controller, "commit", "-m", "configura escritório sandbox"); git(controller, "push")
+    invite = run(controller, sys.executable, "euro.py", "gerar-codigo", "--papel", "advogado", capture=True)
     git(executor, "pull", "--rebase")
-    run(executor, sys.executable, "euro.py", "configurar", "--nome", "Advogada Dois", "--escritorio", "Laboratório Método Euro", "--papel", "advogado", "--agente", "claude", "--raiz-entradas", str(lab), "--repositorio-privado-confirmado")
+    run(executor, sys.executable, "euro.py", "entrar-com-codigo", invite, "--nome", "Advogada Dois", "--agente", "claude")
+    executor_local_path = executor / ".metodo-euro.local.json"
+    executor_local = json.loads(executor_local_path.read_text(encoding="utf-8"))
+    executor_local["raizes_entrada"] = {"congelado": str(lab)}
+    executor_local_path.write_text(json.dumps(executor_local, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     links = base / "perfis"
     run(executor, sys.executable, "euro.py", "instalar-skills", "--destino-base", str(links))
     if not (links / ".claude/skills/executar-tarefa/SKILL.md").is_file() or not (links / ".agents/skills/executar-tarefa/SKILL.md").is_file():

@@ -10,6 +10,7 @@ configuração local. Sem a confirmação, `criar-tarefa` deve permanecer bloque
 - Comece sempre em `sandbox`. Nesse modo, não escreva no Sync, Infinitum, Esteira, Meu Estagiário,
   processo vivo ou qualquer sistema externo.
 - Autos são somente leitura. Nunca protocole. Revisão humana e protocolo são gates distintos.
+- O primeiro instalador é `dono`; somente ele nomeia Controllers e ele pode acumular `controller`.
 - O papel `controller` cria, distribui e revisa tarefas; `advogado` assume e entrega tarefas.
 - O Advogado usa apenas a entrada resolvida pelo comando `contexto`; nunca procure nem abra gabaritos.
 - Segredos ficam na máquina, fora do Git e fora da conversa.

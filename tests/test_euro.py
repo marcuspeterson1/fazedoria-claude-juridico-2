@@ -40,10 +40,18 @@ class EuroTests(unittest.TestCase):
     def test_invite_round_trip(self):
         shared = {"nome_escritorio": "Escritório Exemplo", "organizacao": {
             "id": "org-1", "controller": "Pessoa Um", "repositorio": "https://github.com/exemplo/privado"}}
-        code = euro.make_invite(shared)
+        code = euro.make_invite(shared, "controller")
         decoded = euro.read_invite(code)
         self.assertEqual(decoded["escritorio"], "Escritório Exemplo")
-        self.assertEqual(decoded["papel"], "advogado")
+        self.assertEqual(decoded["papel"], "controller")
+
+    def test_owner_can_accumulate_controller(self):
+        parsed = euro.parser().parse_args(["iniciar-escritorio", "--nome", "A", "--escritorio", "E", "--tambem-controller"])
+        self.assertTrue(parsed.tambem_controller)
+
+    def test_invite_requires_specific_role(self):
+        parsed = euro.parser().parse_args(["gerar-codigo", "--papel", "advogado"])
+        self.assertEqual(parsed.papel, "advogado")
 
     def test_tampered_invite_is_rejected(self):
         shared = {"nome_escritorio": "E", "organizacao": {"id": "1", "repositorio": "https://example.invalid/r"}}

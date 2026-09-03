@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 LOCAL = ROOT / ".metodo-euro.local.json"
 SHARED = ROOT / "metodo-euro.json"
-VALID_ROLES = {"controller", "advogado"}
+VALID_ROLES = {"dono", "controller", "advogado"}
 VALID_AGENTS = {"claude", "codex"}
 TRANSITIONS = {
     "aberta": {"em_execucao"},
@@ -44,10 +44,12 @@ def repo_url():
     result = subprocess.run(["git", "remote", "get-url", "origin"], cwd=ROOT, text=True, capture_output=True)
     return result.stdout.strip() if result.returncode == 0 else ""
 
-def make_invite(shared):
+def make_invite(shared, papel="advogado"):
+    if papel not in {"controller", "advogado"}:
+        raise SystemExit("Código de entrada permitido somente para Controller ou Advogado.")
     org = shared.get("organizacao") or {}
     payload = {"v": 1, "organizacao_id": org.get("id"), "escritorio": shared.get("nome_escritorio"),
-               "repositorio": org.get("repositorio"), "papel": "advogado"}
+               "repositorio": org.get("repositorio"), "papel": papel}
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
     body = base64.urlsafe_b64encode(raw).decode().rstrip("=")
     return f"EURO1.{body}.{hashlib.sha256(raw).hexdigest()[:12]}"
@@ -88,10 +90,13 @@ def config():
         raise SystemExit("Configuração local ausente. Execute: python3 euro.py configurar")
     return load(LOCAL), load(SHARED)
 
+def local_roles(local):
+    return set(local.get("papeis") or [local.get("papel")])
+
 def require_role(expected):
     local, shared = config()
-    if local["papel"] != expected:
-        raise SystemExit(f"Ação exclusiva de {expected}; papel local: {local['papel']}")
+    if expected not in local_roles(local):
+        raise SystemExit(f"Ação exclusiva de {expected}; papel local: {', '.join(sorted(local_roles(local)))}")
     return local, shared
 
 def task_path(task_id):
@@ -131,9 +136,9 @@ def cmd_configure(a):
         roots["congelado"] = str(root)
     shared = load(SHARED)
     org = shared.get("organizacao") or {}
-    if org.get("controller") and a.papel == "controller" and org["controller"] != a.nome:
-        raise SystemExit("O papel Controller já pertence ao primeiro instalador deste escritório.")
-    data = {"schema_version": 1, "colaborador": a.nome, "papel": a.papel,
+    if a.papel == "controller" and org.get("controllers") and a.nome not in org["controllers"]:
+        raise SystemExit("Somente o Dono pode nomear Controllers por código de entrada.")
+    data = {"schema_version": 1, "colaborador": a.nome, "papel": a.papel, "papeis": [a.papel],
             "agente": a.agente, "repositorio_privado_confirmado": a.repositorio_privado_confirmado,
             "sincronizacao_automatica": True, "organizacao_id": org.get("id"),
             "raizes_entrada": roots, "configurado_em": now()}
@@ -146,41 +151,46 @@ def cmd_configure(a):
 def cmd_start_office(a):
     shared = load(SHARED)
     org = shared.get("organizacao") or {}
-    if org.get("id") and org.get("controller") != a.nome:
-        raise SystemExit("Este escritório já tem um Controller congelado.")
+    if org.get("id") and org.get("dono") != a.nome:
+        raise SystemExit("Este escritório já tem um Dono/Administrador congelado.")
     if not org.get("id"):
         shared["nome_escritorio"] = a.escritorio
-        shared["organizacao"] = {"id": str(uuid.uuid4()), "controller": a.nome,
+        shared["organizacao"] = {"id": str(uuid.uuid4()), "dono": a.nome,
+                                 "controllers": [a.nome] if a.tambem_controller else [],
                                  "repositorio": a.repositorio or repo_url(), "criada_em": now()}
         if not shared["organizacao"]["repositorio"]: raise SystemExit("Repositório privado não identificado.")
         save(SHARED, shared)
     previous = load(LOCAL) if LOCAL.exists() else {}
-    local = {"schema_version": 1, "colaborador": a.nome, "papel": "controller", "agente": a.agente,
+    papeis = ["dono"] + (["controller"] if a.tambem_controller else [])
+    local = {"schema_version": 1, "colaborador": a.nome, "papel": "dono", "papeis": papeis, "agente": a.agente,
              "repositorio_privado_confirmado": True, "sincronizacao_automatica": True,
              "organizacao_id": shared["organizacao"]["id"],
              "raizes_entrada": previous.get("raizes_entrada", {}), "configurado_em": now()}
     save(LOCAL, local)
-    auto_git([str(SHARED.relative_to(ROOT))], "config: iniciar escritório e congelar Controller")
-    print("CÓDIGO DE ENTRADA DO ESCRITÓRIO:")
-    print(make_invite(shared))
+    auto_git([str(SHARED.relative_to(ROOT))], "config: iniciar escritório e congelar Dono")
+    print("OK — escritório criado. Dono/Administrador:", a.nome)
+    print("PAPÉIS LOCAIS:", ", ".join(papeis))
 
 def cmd_join(a):
     invite = read_invite(a.codigo)
     shared = load(SHARED); org = shared.get("organizacao") or {}
     if invite["organizacao_id"] != org.get("id") or invite["escritorio"] != shared.get("nome_escritorio"):
         raise SystemExit("O código pertence a outro escritório ou a outra cópia do Kit.")
-    local = {"schema_version": 1, "colaborador": a.nome, "papel": "advogado", "agente": a.agente,
+    papel = invite.get("papel")
+    if papel not in {"controller", "advogado"}:
+        raise SystemExit("O código não contém um papel permitido.")
+    local = {"schema_version": 1, "colaborador": a.nome, "papel": papel, "papeis": [papel], "agente": a.agente,
              "repositorio_privado_confirmado": True, "sincronizacao_automatica": True,
              "organizacao_id": org["id"], "raizes_entrada": {}, "configurado_em": now()}
     save(LOCAL, local)
     print("OK — entrada concluída no escritório:", shared["nome_escritorio"])
-    print("Papel: Advogado | Controller:", org["controller"])
+    print("Papel:", papel.title(), "| Dono/Administrador:", org.get("dono"))
 
-def cmd_invite(_a):
-    _local, shared = require_role("controller")
+def cmd_invite(a):
+    _local, shared = require_role("dono")
     if not (shared.get("organizacao") or {}).get("id"):
         raise SystemExit("O escritório ainda não foi iniciado pelo novo fluxo.")
-    print(make_invite(shared))
+    print(make_invite(shared, a.papel))
 
 def cmd_decode_invite(a):
     invite = read_invite(a.codigo)
@@ -197,7 +207,7 @@ def cmd_diagnose(_a):
         checks += [
             (shared.get("modo") == "sandbox", "modo sandbox ativo"),
             (shared.get("gates", {}).get("protocolo_manual") is True, "protocolo continua manual"),
-            (local.get("papel") in VALID_ROLES, "papel local válido"),
+            (local_roles(local).issubset(VALID_ROLES) and bool(local_roles(local)), "papel local válido"),
             (local.get("agente") in VALID_AGENTS, "agente local válido"),
             (local.get("repositorio_privado_confirmado") is True, "repositório operacional privado confirmado"),
         ]
@@ -233,7 +243,7 @@ def cmd_create(a):
     print(task_id)
 
 def visible(data, local):
-    return local["papel"] == "controller" or not data.get("responsavel") or data.get("responsavel") == local["colaborador"] or data.get("advogado") == local["colaborador"]
+    return "controller" in local_roles(local) or not data.get("responsavel") or data.get("responsavel") == local["colaborador"] or data.get("advogado") == local["colaborador"]
 
 def cmd_list(a):
     pull_before_read()
@@ -449,9 +459,9 @@ raise SystemExit(push.returncode)
 def parser():
     p = argparse.ArgumentParser(description="Kit 2 Método Euro — fila jurídica segura")
     sub = p.add_subparsers(dest="cmd", required=True)
-    q = sub.add_parser("iniciar-escritorio"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.add_argument("--repositorio", default=""); q.set_defaults(fn=cmd_start_office)
+    q = sub.add_parser("iniciar-escritorio"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.add_argument("--repositorio", default=""); q.add_argument("--tambem-controller", action="store_true"); q.set_defaults(fn=cmd_start_office)
     q = sub.add_parser("entrar-com-codigo"); q.add_argument("codigo"); q.add_argument("--nome", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.set_defaults(fn=cmd_join)
-    q = sub.add_parser("gerar-codigo"); q.set_defaults(fn=cmd_invite)
+    q = sub.add_parser("gerar-codigo"); q.add_argument("--papel", choices=["advogado", "controller"], required=True); q.set_defaults(fn=cmd_invite)
     q = sub.add_parser("decodificar-codigo"); q.add_argument("codigo"); q.set_defaults(fn=cmd_decode_invite)
     q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--raiz-entradas"); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
     q = sub.add_parser("diagnosticar"); q.set_defaults(fn=cmd_diagnose)

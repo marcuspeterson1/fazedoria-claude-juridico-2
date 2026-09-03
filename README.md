@@ -1,6 +1,6 @@
 # Kit 2 - Implementando sua Esteira de Petições Automatizadas
 
-Um núcleo único para Controller e Advogado, Claude Code e Codex, um ou vários colaboradores.
+Um núcleo único para Dono/Administrador, Controller e Advogado, Claude Code e Codex.
 O repositório público deste Kit é apenas o molde, sem dados. Durante a instalação, o Claude cria um
 novo repositório **privado** para o escritório. Esse repositório privado é a fonte canônica; cada
 pessoa usa sua conta pessoal do GitHub e um clone próprio. O núcleo funciona sem software jurídico:
@@ -27,13 +27,14 @@ Primeiro faça apenas esta pergunta: “Você está criando o escritório ou rec
 
 Se eu estiver criando o escritório: peça somente meu nome e o nome do escritório. Crie um novo
 repositório privado, copie o Kit, confirme que está privado e execute `iniciar-escritorio`. O primeiro
-instalador fica congelado como Controller. Gere um código de entrada para os demais colaboradores.
+instalador fica congelado como Dono/Administrador. Pergunte se ele também trabalhará como Controller.
+Somente o Dono pode gerar códigos, escolhendo separadamente Controller ou Advogado.
 Explique que, antes de alguém usar o código, a conta pessoal dessa pessoa precisa ser convidada no
 GitHub; faça o convite por mim quando eu informar o usuário GitHub.
 
 Se eu tiver um código: não pergunte nome do escritório, função, agente ou pasta técnica. Decodifique
 o código, abra/clone o repositório privado correspondente e execute `entrar-com-codigo`, perguntando
-somente meu nome. O escritório vem do código e o papel é Advogado.
+somente meu nome. O escritório e o papel vêm do código e não podem ser escolhidos pelo colaborador.
 
 Crie automaticamente uma pasta local padrão para os casos. Instale e ative a sincronização em
 segundo plano. Antes de mostrar a fila, sincronize silenciosamente; depois de assumir, entregar,
@@ -48,13 +49,14 @@ pessoal inevitável.
 ## Como funciona o código de entrada
 
 O código não é senha e não contém credencial. Ele carrega a identidade do escritório, o endereço do
-repositório privado e o papel Advogado, com verificação contra alteração. O GitHub continua exigindo
+repositório privado e o papel Controller ou Advogado, com verificação contra alteração. O GitHub continua exigindo
 login pessoal e convite prévio para proteger os dados do escritório. Depois disso, o colaborador não
 digita novamente o nome do escritório nem escolhe seu papel.
 
 ## Fluxo operacional
 
-O primeiro computador executa `iniciar-escritorio`; os demais usam `entrar-com-codigo`. O comando
+O primeiro computador executa `iniciar-escritorio`; o Dono usa `gerar-codigo --papel controller` ou
+`gerar-codigo --papel advogado`; os demais usam `entrar-com-codigo`. O comando
 antigo `configurar` permanece apenas para compatibilidade do laboratório atual. Depois:
 
 - `python3 euro.py instalar-skills` liga a fonte canônica aos diretórios reconhecidos por Claude Code
