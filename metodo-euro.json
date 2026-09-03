@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "nome_escritorio": "CONFIGURE-ME",
+  "organizacao": null,
   "modo": "sandbox",
   "fonte_autos": "congelado",
   "conectores": {
@@ -13,4 +14,3 @@
     "promocao_skill_por_controller": true
   }
 }
-

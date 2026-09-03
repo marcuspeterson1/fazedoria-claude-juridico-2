@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -10,6 +11,7 @@ import re
 import subprocess
 import sys
 import platform
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,6 +39,49 @@ def save(path, data):
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(tmp, path)
+
+def repo_url():
+    result = subprocess.run(["git", "remote", "get-url", "origin"], cwd=ROOT, text=True, capture_output=True)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+def make_invite(shared):
+    org = shared.get("organizacao") or {}
+    payload = {"v": 1, "organizacao_id": org.get("id"), "escritorio": shared.get("nome_escritorio"),
+               "repositorio": org.get("repositorio"), "papel": "advogado"}
+    raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode()
+    body = base64.urlsafe_b64encode(raw).decode().rstrip("=")
+    return f"EURO1.{body}.{hashlib.sha256(raw).hexdigest()[:12]}"
+
+def read_invite(code):
+    try:
+        prefix, body, check = code.strip().split(".", 2)
+        if prefix != "EURO1": raise ValueError
+        raw = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
+        if hashlib.sha256(raw).hexdigest()[:12] != check: raise ValueError
+        data = json.loads(raw)
+        if not all(data.get(k) for k in ("organizacao_id", "escritorio", "repositorio")): raise ValueError
+        return data
+    except (ValueError, json.JSONDecodeError):
+        raise SystemExit("Código de entrada inválido ou alterado. Solicite outro ao Controller.")
+
+def auto_git(paths, message):
+    if os.getenv("METODO_EURO_NO_AUTO_GIT") == "1" or not (ROOT / ".git").exists(): return
+    local = load(LOCAL) if LOCAL.exists() else {}
+    if not local.get("sincronizacao_automatica", True): return
+    subprocess.run(["git", "add", "--", *paths], cwd=ROOT, check=True, capture_output=True)
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
+        subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True, capture_output=True)
+    pull = subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, capture_output=True, text=True)
+    if pull.returncode:
+        subprocess.run(["git", "rebase", "--abort"], cwd=ROOT, capture_output=True)
+        raise SystemExit("Sincronização encontrou conflito. As duas versões foram preservadas para conciliação.")
+    if subprocess.run(["git", "push"], cwd=ROOT, capture_output=True).returncode:
+        raise SystemExit("A alteração ficou salva neste computador, mas o envio automático ao escritório falhou.")
+
+def pull_before_read():
+    if os.getenv("METODO_EURO_NO_AUTO_GIT") == "1" or not (ROOT / ".git").exists(): return
+    if subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, text=True, capture_output=True).stdout: return
+    subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, capture_output=True)
 
 def config():
     if not LOCAL.exists():
@@ -84,15 +129,62 @@ def cmd_configure(a):
         if not root.is_dir():
             raise SystemExit("Raiz de entradas não existe.")
         roots["congelado"] = str(root)
+    shared = load(SHARED)
+    org = shared.get("organizacao") or {}
+    if org.get("controller") and a.papel == "controller" and org["controller"] != a.nome:
+        raise SystemExit("O papel Controller já pertence ao primeiro instalador deste escritório.")
     data = {"schema_version": 1, "colaborador": a.nome, "papel": a.papel,
             "agente": a.agente, "repositorio_privado_confirmado": a.repositorio_privado_confirmado,
+            "sincronizacao_automatica": True, "organizacao_id": org.get("id"),
             "raizes_entrada": roots, "configurado_em": now()}
     save(LOCAL, data)
-    shared = load(SHARED)
     if shared["nome_escritorio"] == "CONFIGURE-ME" and a.escritorio:
         shared["nome_escritorio"] = a.escritorio
         save(SHARED, shared)
     print("OK — configuração local salva fora do Git; modo compartilhado:", shared["modo"])
+
+def cmd_start_office(a):
+    shared = load(SHARED)
+    org = shared.get("organizacao") or {}
+    if org.get("id") and org.get("controller") != a.nome:
+        raise SystemExit("Este escritório já tem um Controller congelado.")
+    if not org.get("id"):
+        shared["nome_escritorio"] = a.escritorio
+        shared["organizacao"] = {"id": str(uuid.uuid4()), "controller": a.nome,
+                                 "repositorio": a.repositorio or repo_url(), "criada_em": now()}
+        if not shared["organizacao"]["repositorio"]: raise SystemExit("Repositório privado não identificado.")
+        save(SHARED, shared)
+    local = {"schema_version": 1, "colaborador": a.nome, "papel": "controller", "agente": a.agente,
+             "repositorio_privado_confirmado": True, "sincronizacao_automatica": True,
+             "organizacao_id": shared["organizacao"]["id"], "raizes_entrada": {}, "configurado_em": now()}
+    save(LOCAL, local)
+    auto_git([str(SHARED.relative_to(ROOT))], "config: iniciar escritório e congelar Controller")
+    print("CÓDIGO DE ENTRADA DO ESCRITÓRIO:")
+    print(make_invite(shared))
+
+def cmd_join(a):
+    invite = read_invite(a.codigo)
+    shared = load(SHARED); org = shared.get("organizacao") or {}
+    if invite["organizacao_id"] != org.get("id") or invite["escritorio"] != shared.get("nome_escritorio"):
+        raise SystemExit("O código pertence a outro escritório ou a outra cópia do Kit.")
+    local = {"schema_version": 1, "colaborador": a.nome, "papel": "advogado", "agente": a.agente,
+             "repositorio_privado_confirmado": True, "sincronizacao_automatica": True,
+             "organizacao_id": org["id"], "raizes_entrada": {}, "configurado_em": now()}
+    save(LOCAL, local)
+    print("OK — entrada concluída no escritório:", shared["nome_escritorio"])
+    print("Papel: Advogado | Controller:", org["controller"])
+
+def cmd_invite(_a):
+    _local, shared = require_role("controller")
+    if not (shared.get("organizacao") or {}).get("id"):
+        raise SystemExit("O escritório ainda não foi iniciado pelo novo fluxo.")
+    print(make_invite(shared))
+
+def cmd_decode_invite(a):
+    invite = read_invite(a.codigo)
+    print("ESCRITÓRIO:", invite["escritorio"])
+    print("REPOSITÓRIO PRIVADO:", invite["repositorio"])
+    print("PAPEL:", invite["papel"])
 
 def cmd_diagnose(_a):
     checks = []
@@ -135,12 +227,14 @@ def cmd_create(a):
             "revisao": None, "historico": []}
     event(data, "criada", local["colaborador"], "Providência é sugestão sujeita à revisão humana.")
     save(ROOT / "fila" / f"{task_id}.json", data)
+    auto_git([f"fila/{task_id}.json"], f"fila: criar {task_id}")
     print(task_id)
 
 def visible(data, local):
     return local["papel"] == "controller" or not data.get("responsavel") or data.get("responsavel") == local["colaborador"] or data.get("advogado") == local["colaborador"]
 
 def cmd_list(a):
+    pull_before_read()
     local, _ = config()
     rows = []
     for p in sorted((ROOT / "fila").glob("*.json")):
@@ -160,6 +254,7 @@ def cmd_claim(a):
     data["advogado"] = local["colaborador"]
     event(data, "assumida", local["colaborador"])
     save(task_path(a.id), data)
+    auto_git([f"fila/{a.id}.json"], f"fila: assumir {a.id}")
     print("OK — tarefa assumida:", a.id)
 
 def resolve_context(data, local):
@@ -198,6 +293,7 @@ def cmd_submit(a):
     data["entrega"] = {"arquivo": str(target.relative_to(ROOT)), "sha256": digest, "em": now(), "por": local["colaborador"]}
     event(data, "entregue", local["colaborador"], f"sha256:{digest}")
     save(task_path(a.id), data)
+    auto_git([f"fila/{a.id}.json", f"entregas/{a.id}"], f"fila: entregar {a.id}")
     print("OK — entrega registrada; protocolo não executado. SHA256:", digest)
 
 def cmd_review(a):
@@ -208,6 +304,7 @@ def cmd_review(a):
     data["revisao"] = {"decisao": a.decisao, "feedback": a.feedback, "por": local["colaborador"], "em": now()}
     event(data, "revisada", local["colaborador"], a.decisao)
     save(task_path(a.id), data)
+    auto_git([f"fila/{a.id}.json"], f"fila: revisar {a.id}")
     print("OK — revisão registrada; aprovação não equivale a protocolo.")
 
 def cmd_reopen(a):
@@ -218,6 +315,7 @@ def cmd_reopen(a):
     transition(data, "em_execucao")
     event(data, "ajustes_iniciados", local["colaborador"])
     save(task_path(a.id), data)
+    auto_git([f"fila/{a.id}.json"], f"fila: iniciar ajustes {a.id}")
     print("OK — ajustes iniciados.")
 
 def cmd_propose(a):
@@ -235,6 +333,7 @@ def cmd_propose(a):
     target = ROOT / "propostas" / f"{name}--{a.id}.md"
     header = f"---\nskill: {name}\ntarefa_origem: {a.id}\nproposta_por: {local['colaborador']}\nproposta_em: {now()}\n---\n\n"
     target.write_text(header + content, encoding="utf-8")
+    auto_git([str(target.relative_to(ROOT))], f"skill: propor {name}")
     print("OK — proposta criada:", target.relative_to(ROOT))
 
 def cmd_promote(a):
@@ -252,6 +351,7 @@ def cmd_promote(a):
     target.parent.mkdir(parents=True, exist_ok=True)
     body = proposal.read_text(encoding="utf-8")
     target.write_text(f"---\nname: {name}\ndescription: Skill candidata promovida após revisão humana.\n---\n\n" + body, encoding="utf-8")
+    auto_git([str(target.relative_to(ROOT))], f"skill: promover {name}")
     print("OK — skill candidata promovida por", local["colaborador"], ":", target.relative_to(ROOT))
 
 def cmd_status(a):
@@ -347,6 +447,10 @@ raise SystemExit(push.returncode)
 def parser():
     p = argparse.ArgumentParser(description="Kit 2 Método Euro — fila jurídica segura")
     sub = p.add_subparsers(dest="cmd", required=True)
+    q = sub.add_parser("iniciar-escritorio"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.add_argument("--repositorio", default=""); q.set_defaults(fn=cmd_start_office)
+    q = sub.add_parser("entrar-com-codigo"); q.add_argument("codigo"); q.add_argument("--nome", required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), default="claude"); q.set_defaults(fn=cmd_join)
+    q = sub.add_parser("gerar-codigo"); q.set_defaults(fn=cmd_invite)
+    q = sub.add_parser("decodificar-codigo"); q.add_argument("codigo"); q.set_defaults(fn=cmd_decode_invite)
     q = sub.add_parser("configurar"); q.add_argument("--nome", required=True); q.add_argument("--escritorio", required=True); q.add_argument("--papel", choices=sorted(VALID_ROLES), required=True); q.add_argument("--agente", choices=sorted(VALID_AGENTS), required=True); q.add_argument("--raiz-entradas"); q.add_argument("--repositorio-privado-confirmado", action="store_true", help="Use somente após verificar no GitHub que o repositório operacional é privado."); q.set_defaults(fn=cmd_configure)
     q = sub.add_parser("diagnosticar"); q.set_defaults(fn=cmd_diagnose)
     q = sub.add_parser("criar-tarefa"); q.add_argument("--cnj", required=True); q.add_argument("--referencia", required=True); q.add_argument("--providencia", required=True); q.add_argument("--responsavel", default=""); q.add_argument("--fonte", choices=["congelado", "sync"], default="congelado"); q.set_defaults(fn=cmd_create)

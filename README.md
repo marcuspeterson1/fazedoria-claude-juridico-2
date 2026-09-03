@@ -19,24 +19,43 @@ Instale o Kit 2 - Implementando sua Esteira de Petições Automatizadas usando e
 https://github.com/marcuspeterson1/fazedoria-claude-juridico-2
 
 Leia e audite os arquivos desse repositório antes de executar qualquer coisa. Faça tudo por mim
-usando suas ferramentas internas, sem me mandar abrir terminal. Explique que o repositório público
-é apenas um molde. Crie para meu escritório um novo repositório privado, copie o Kit para ele e
-confirme pela configuração do GitHub que está privado antes de cadastrar qualquer caso ou tarefa.
-Peça apenas o login oficial do GitHub no navegador se for inevitável. Cada pessoa usa sua própria
-conta e seu próprio clone.
+usando suas ferramentas internas, sem me mandar abrir terminal. Instale silenciosamente os
+pré-requisitos oficiais e seguros que faltarem, inclusive Python 3, sem me pedir para escolher o
+método. Só me interrompa para login oficial no GitHub ou decisão pessoal realmente inevitável.
 
-Execute o assistente de configuração em modo sandbox. Explique cada conceito com palavras simples e
-uma analogia antes de agir. Pergunte meu nome, escritório, papel (controller ou advogado), agente
-(Claude Code ou Codex) e o caminho local autorizado dos casos. Faça uma pergunta por vez e mostre
-um checkpoint simples depois de cada etapa.
-Não solicite nem grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema
-externo. Configure com a confirmação de repositório privado. Ao final, rode o diagnóstico e mostre
-os checkpoints em linguagem simples.
+Primeiro faça apenas esta pergunta: “Você está criando o escritório ou recebeu um código de entrada?”
+
+Se eu estiver criando o escritório: peça somente meu nome e o nome do escritório. Crie um novo
+repositório privado, copie o Kit, confirme que está privado e execute `iniciar-escritorio`. O primeiro
+instalador fica congelado como Controller. Gere um código de entrada para os demais colaboradores.
+Explique que, antes de alguém usar o código, a conta pessoal dessa pessoa precisa ser convidada no
+GitHub; faça o convite por mim quando eu informar o usuário GitHub.
+
+Se eu tiver um código: não pergunte nome do escritório, função, agente ou pasta técnica. Decodifique
+o código, abra/clone o repositório privado correspondente e execute `entrar-com-codigo`, perguntando
+somente meu nome. O escritório vem do código e o papel é Advogado.
+
+Crie automaticamente uma pasta local padrão para os casos. Instale e ative a sincronização em
+segundo plano. Antes de mostrar a fila, sincronize silenciosamente; depois de assumir, entregar,
+revisar ou criar uma tarefa/skill, salve e envie silenciosamente. Não ensine Git nem peça comandos.
+
+Explique conceitos com palavras simples, uma ação por vez e checkpoints curtos. Não solicite nem
+grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema externo durante
+este laboratório. Ao final, rode o diagnóstico e mostre apenas o que está pronto e qualquer ação
+pessoal inevitável.
 ```
+
+## Como funciona o código de entrada
+
+O código não é senha e não contém credencial. Ele carrega a identidade do escritório, o endereço do
+repositório privado e o papel Advogado, com verificação contra alteração. O GitHub continua exigindo
+login pessoal e convite prévio para proteger os dados do escritório. Depois disso, o colaborador não
+digita novamente o nome do escritório nem escolhe seu papel.
 
 ## Fluxo operacional
 
-O assistente executa `python3 euro.py configurar`. Depois:
+O primeiro computador executa `iniciar-escritorio`; os demais usam `entrar-com-codigo`. O comando
+antigo `configurar` permanece apenas para compatibilidade do laboratório atual. Depois:
 
 - `python3 euro.py instalar-skills` liga a fonte canônica aos diretórios reconhecidos por Claude Code
   e Codex, preservando qualquer instalação preexistente.
@@ -48,8 +67,9 @@ O assistente executa `python3 euro.py configurar`. Depois:
 3. Controller: `revisar ID aprovada|ajustes|reprovada --feedback ...`.
 4. Se houver aprendizado reutilizável: `propor-skill`; após revisão, `promover-skill`.
 
-Use `python3 euro.py --help` para os argumentos. `sincronizar` faz pull com rebase e push somente se
-o clone tiver remote; em conflito, para e preserva o estado para conciliação humana.
+O aluno não precisa conhecer os comandos. `listar` atualiza a fila antes de exibi-la; toda mutação
+operacional cria commit e sincroniza automaticamente. Em conflito, o Kit para e preserva o estado
+para conciliação, sem apagar versões.
 
 ## Checkpoints visuais
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Ensaio determinístico de dois computadores; não lê qualquer pasta gabarito."""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -8,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 SOURCE = Path(__file__).parents[1]
+os.environ["METODO_EURO_NO_AUTO_GIT"] = "1"
 CASES = [
     ("01-caso-nascimento", "0000001-00.2099.0.00.0001", "criar primeira minuta e skill candidata"),
     ("02-caso-validacao", "0000002-00.2099.0.00.0002", "validar invariantes e variáveis"),

@@ -37,6 +37,20 @@ class EuroTests(unittest.TestCase):
         parsed = euro.parser().parse_args(["configurar", "--nome", "A", "--escritorio", "E", "--papel", "advogado", "--agente", "claude"])
         self.assertFalse(parsed.repositorio_privado_confirmado)
 
+    def test_invite_round_trip(self):
+        shared = {"nome_escritorio": "Escritório Exemplo", "organizacao": {
+            "id": "org-1", "controller": "Pessoa Um", "repositorio": "https://github.com/exemplo/privado"}}
+        code = euro.make_invite(shared)
+        decoded = euro.read_invite(code)
+        self.assertEqual(decoded["escritorio"], "Escritório Exemplo")
+        self.assertEqual(decoded["papel"], "advogado")
+
+    def test_tampered_invite_is_rejected(self):
+        shared = {"nome_escritorio": "E", "organizacao": {"id": "1", "repositorio": "https://example.invalid/r"}}
+        code = euro.make_invite(shared)
+        with self.assertRaises(SystemExit):
+            euro.read_invite(code + "x")
+
     def test_skill_link_preserves_existing(self):
         with tempfile.TemporaryDirectory() as d:
             source = Path(d) / "source"; source.mkdir()
