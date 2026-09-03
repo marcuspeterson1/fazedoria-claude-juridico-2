@@ -1,4 +1,4 @@
-# Kit 2 — Método Euro
+# Kit 2 - Implementando sua Esteira de Petições Automatizadas
 
 Um núcleo único para Controller e Advogado, Claude Code e Codex, um ou vários colaboradores. O
 O repositório público deste Kit é apenas o molde, sem dados. Durante a instalação, o Claude cria um
