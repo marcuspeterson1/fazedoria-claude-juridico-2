@@ -102,6 +102,17 @@ def require_role(expected):
         raise SystemExit(f"Ação exclusiva de {expected}; papel local: {', '.join(sorted(local_roles(local)))}")
     return local, shared
 
+def print_daily_card(local):
+    papeis = local_roles(local)
+    print("\nCOMO COMEÇAR UMA NOVA CONVERSA NO CLAUDE:")
+    if "controller" in papeis:
+        print('/controller-fila Mostre a situação atual da fila e o que depende de mim.')
+    if "advogado" in papeis:
+        print('/executar-tarefa Mostre minha fila e me ajude a executar a próxima tarefa.')
+    if papeis == {"dono"}:
+        print("Use /configurar-kit2 quando precisar incluir pessoas ou alterar a configuração do escritório.")
+    print("Não reinstale o Kit e não informe novamente escritório, código de entrada ou chave do Sync.")
+
 def task_path(task_id):
     path = ROOT / "fila" / f"{task_id}.json"
     if not path.exists():
@@ -159,6 +170,7 @@ def cmd_start_office(a):
     auto_git([str(SHARED.relative_to(ROOT))], "config: iniciar escritório e congelar Dono")
     print("OK — escritório criado. Dono/Administrador:", a.nome)
     print("PAPÉIS LOCAIS:", ", ".join(papeis))
+    print_daily_card(local)
 
 def cmd_join(a):
     invite = read_invite(a.codigo)
@@ -174,6 +186,7 @@ def cmd_join(a):
     save(LOCAL, local)
     print("OK — entrada concluída no escritório:", shared["nome_escritorio"])
     print("Papel:", papel.title(), "| Dono/Administrador:", org.get("dono"))
+    print_daily_card(local)
 
 def cmd_invite(a):
     _local, shared = require_role("dono")
@@ -209,6 +222,7 @@ def cmd_diagnose(_a):
         print(("OK" if ok else "FALHA"), "—", label)
     if not all(ok for ok, _ in checks):
         raise SystemExit(1)
+    print_daily_card(local)
 
 def slug(value):
     value = re.sub(r"[^a-zA-Z0-9-]+", "-", value.strip()).strip("-").lower()
@@ -462,7 +476,10 @@ def cmd_configure_sync(_a):
     local, shared = config()
     if not shared.get("conectores", {}).get("sync", {}).get("somente_leitura"):
         raise SystemExit("BLOQUEADO: o conector não está marcado como somente leitura.")
-    chave = _pedir_chave_sync()
+    chave, origem = sync_connector.descobrir_chave_existente(local["organizacao_id"])
+    reutilizada = bool(chave)
+    if not chave:
+        chave = _pedir_chave_sync()
     cliente = sync_connector.ClienteSync(chave)
     try:
         conta = cliente.conta()
@@ -470,9 +487,13 @@ def cmd_configure_sync(_a):
         raise SystemExit(f"A chave não foi salva: {exc}")
     if not conta.get("ativo") or not conta.get("acesso_liberado"):
         raise SystemExit("A conta do Sync não está ativa/liberada; a chave não foi salva.")
-    sync_connector.salvar_chave(chave, local["organizacao_id"])
+    if not reutilizada:
+        sync_connector.salvar_chave(chave, local["organizacao_id"])
     print("OK — Sync conectado em modo somente leitura para:", conta.get("conta") or "conta identificada")
-    print("OK — chave guardada somente neste computador, fora do Git e da conversa.")
+    if reutilizada:
+        print("OK — integração já existente reutilizada sem mover ou duplicar a chave:", origem)
+    else:
+        print("OK — chave guardada somente neste computador, fora do Git e da conversa.")
 
 def cmd_test_sync(_a):
     local, _shared = config()

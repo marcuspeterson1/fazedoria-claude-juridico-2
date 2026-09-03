@@ -23,8 +23,20 @@ execute `instalar-skills` e `preparar-auto-sync`; instale o arquivo de
 agendamento gerado pelo mecanismo nativo do sistema, sem editar seu intervalo de dez minutos. Termine
 com `diagnosticar`, comprove uma sincronização e traduza o resultado em checkpoints simples.
 
-O Sync é obrigatório como fonte de autos em operação. Em cada computador autorizado, abra a entrada
-segura nativa e execute `configurar-sync` sem receber a chave na conversa, argumento ou Git; valide
-com `testar-sync`. O código de entrada nunca transporta essa credencial. Quando o Advogado assumir
+No encerramento, não diga apenas que a instalação terminou. Mostre um cartão destacado chamado
+“Como começar uma nova conversa no Claude” e peça que a pessoa o guarde:
+
+- Controller: `/controller-fila Mostre a situação atual da fila e o que depende de mim.`
+- Advogado: `/executar-tarefa Mostre minha fila e me ajude a executar a próxima tarefa.`
+- Dono que também é Controller recebe a orientação de Controller.
+
+Explique expressamente que não é preciso reinstalar o Kit, repetir o código de entrada, informar o
+escritório ou cadastrar novamente a chave do Sync em cada conversa.
+
+O Sync é obrigatório como fonte de autos em operação. Antes de pedir chave ou sugerir outro local,
+execute `configurar-sync`: ele procura e valida uma integração do Sync já existente no ambiente,
+arquivo seguro ou configuração do Claude, reutilizando-a sem mover, exibir ou duplicar o segredo.
+Somente se não encontrar acesso válido, abra a entrada segura nativa sem receber a chave na conversa,
+argumento ou Git; valide com `testar-sync`. O código de entrada nunca transporta essa credencial. Quando o Advogado assumir
 tarefa, execute `contexto`: ele materializa localmente a cronologia e os Markdowns em pasta ignorada
 pelo Git.

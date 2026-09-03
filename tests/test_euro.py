@@ -2,6 +2,8 @@ import importlib.util
 import json
 import tempfile
 import unittest
+import contextlib
+import io
 from pathlib import Path
 
 SPEC = importlib.util.spec_from_file_location("euro", Path(__file__).parents[1] / "euro.py")
@@ -43,6 +45,13 @@ class EuroTests(unittest.TestCase):
         parsed = euro.parser().parse_args(["gerar-codigo", "--papel", "advogado"])
         self.assertEqual(parsed.papel, "advogado")
 
+    def test_daily_card_is_role_specific(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            euro.print_daily_card({"papel": "advogado", "papeis": ["advogado"]})
+        self.assertIn("/executar-tarefa", out.getvalue())
+        self.assertNotIn("/controller-fila", out.getvalue())
+
     def test_sync_materializes_chronology_and_markdown_locally(self):
         class FakeSync:
             def autos(self, _cnj):
@@ -59,6 +68,12 @@ class EuroTests(unittest.TestCase):
             self.assertEqual(len(list(entrada.glob("*7*.md"))), 1)
             manifesto = json.loads((entrada / "manifesto-sync.json").read_text())
             self.assertEqual(manifesto["total"], 2)
+
+    def test_existing_secure_env_file_can_be_reused(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / ".secrets.env"
+            path.write_text("ATENDE_DIREITO_SYNC_KEY='valor-local'\n", encoding="utf-8")
+            self.assertEqual(kit_sync._ler_env(path)["ATENDE_DIREITO_SYNC_KEY"], "valor-local")
 
     def test_tampered_invite_is_rejected(self):
         shared = {"nome_escritorio": "E", "organizacao": {"id": "1", "repositorio": "https://example.invalid/r"}}

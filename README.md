@@ -95,10 +95,11 @@ repositório privado e o papel Controller ou Advogado, com verificação contra 
 login pessoal e convite prévio para proteger os dados do escritório. Depois disso, o colaborador não
 digita novamente o nome do escritório nem escolhe seu papel.
 
-A chave do Sync deliberadamente não viaja no código. No estado atual do produto, ela é uma credencial
-do escritório: o Dono deve cadastrá-la uma vez em cada computador autorizado por uma caixa local com
-texto oculto. O Kit valida a conta antes de guardar a chave em arquivo privado fora do repositório.
-Ela nunca aparece na linha de comando, no Git, no prompt ou nos logs.
+A chave do Sync deliberadamente não viaja no código. Se o computador já tiver o Sync integrado ao
+Claude ou configurado em ambiente/arquivo seguro, o Kit valida e reutiliza esse acesso no local em
+que ele já está, sem mover ou duplicar a chave. Somente quando não encontra uma integração válida, o
+Dono a cadastra uma vez por uma caixa local com texto oculto. Ela nunca aparece na linha de comando,
+no Git, no prompt ou nos logs.
 
 ## Autos pelo Sync
 
@@ -130,6 +131,25 @@ O primeiro computador executa `iniciar-escritorio`; o Dono usa `gerar-codigo --p
 O aluno não precisa conhecer os comandos. `listar` atualiza a fila antes de exibi-la; toda mutação
 operacional cria commit e sincroniza automaticamente. Em conflito, o Kit para e preserva o estado
 para conciliação, sem apagar versões.
+
+## Como começar o trabalho todos os dias
+
+Depois da primeira instalação, não instale novamente nem repita escritório, código de entrada ou
+chave do Sync. Abra uma conversa nova no Claude e envie uma destas frases:
+
+Controller:
+
+```text
+/controller-fila Mostre a situação atual da fila e o que depende de mim.
+```
+
+Advogado:
+
+```text
+/executar-tarefa Mostre minha fila e me ajude a executar a próxima tarefa.
+```
+
+O instalador e o diagnóstico repetem automaticamente a orientação correspondente ao papel local.
 
 ## Checkpoints visuais
 

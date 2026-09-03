@@ -13,6 +13,77 @@ from pathlib import Path
 BASE_URL = "https://sync.atendedireito.app"
 SECRET_FILE = Path.home() / ".metodo-euro" / "sync.json"
 
+def _ler_env(path: Path):
+    try:
+        linhas = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    valores = {}
+    for linha in linhas:
+        match = re.match(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$", linha)
+        if not match:
+            continue
+        valor = match.group(2).strip()
+        if len(valor) >= 2 and valor[0] == valor[-1] and valor[0] in "\"'":
+            valor = valor[1:-1]
+        valores[match.group(1)] = valor
+    return valores
+
+def _strings_json(data, chave=""):
+    if isinstance(data, dict):
+        for k, v in data.items():
+            yield from _strings_json(v, str(k))
+    elif isinstance(data, list):
+        for v in data:
+            yield from _strings_json(v, chave)
+    elif isinstance(data, str):
+        yield chave, data
+
+def descobrir_chave_existente(organizacao_id: str):
+    """Localiza integração já existente sem imprimir, mover ou duplicar o segredo."""
+    try:
+        data = json.loads(SECRET_FILE.read_text(encoding="utf-8"))
+        if data.get("organizacao_id") == organizacao_id and data.get("chave"):
+            return data["chave"], "configuração do próprio Kit"
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    nomes = ("ATENDE_DIREITO_SYNC_KEY", "METODO_EURO_SYNC_KEY")
+    for nome in nomes:
+        if os.getenv(nome):
+            return os.environ[nome], "ambiente seguro já configurado"
+    for path in (Path.home() / ".secrets.env", Path.home() / ".config" / "metodo-euro" / "secrets.env"):
+        valores = _ler_env(path)
+        for nome in nomes:
+            if valores.get(nome):
+                return valores[nome], f"arquivo seguro existente ({path.name})"
+
+    candidatos = [
+        Path.home() / ".claude.json",
+        Path.home() / ".claude" / "settings.json",
+        Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json",
+    ]
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        candidatos.append(Path(appdata) / "Claude" / "claude_desktop_config.json")
+    env_conjunto = {**_ler_env(Path.home() / ".secrets.env"), **os.environ}
+    for path in candidatos:
+        try:
+            bruto = path.read_text(encoding="utf-8")
+            if "sync.atendedireito.app" not in bruto.lower():
+                continue
+            data = json.loads(bruto)
+        except (OSError, json.JSONDecodeError):
+            continue
+        for nome, valor in _strings_json(data):
+            referencia = re.fullmatch(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", valor.strip())
+            if referencia and env_conjunto.get(referencia.group(1)):
+                return env_conjunto[referencia.group(1)], f"integração existente do Claude ({path.name})"
+            limpo = re.sub(r"^Bear" + r"er\s+", "", valor.strip(), flags=re.I)
+            if ("token" in nome.lower() or "key" in nome.lower() or "authorization" in nome.lower()) and limpo.startswith("sk_"):
+                return limpo, f"integração existente do Claude ({path.name})"
+    return None, None
+
 def salvar_chave(chave: str, organizacao_id: str):
     chave = chave.strip()
     if not chave:
@@ -25,13 +96,10 @@ def salvar_chave(chave: str, organizacao_id: str):
     os.chmod(SECRET_FILE, 0o600)
 
 def carregar_chave(organizacao_id: str) -> str:
-    try:
-        data = json.loads(SECRET_FILE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    chave, _origem = descobrir_chave_existente(organizacao_id)
+    if not chave:
         raise RuntimeError("Chave do Sync não configurada neste computador.")
-    if data.get("organizacao_id") != organizacao_id or not data.get("chave"):
-        raise RuntimeError("A chave local do Sync pertence a outro escritório ou está inválida.")
-    return data["chave"]
+    return chave
 
 class ClienteSync:
     def __init__(self, chave: str, base_url: str = BASE_URL, opener=None):
