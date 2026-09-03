@@ -5,13 +5,14 @@ description: Configura uma bancada segura do Kit 2 para Dono, Controller ou Advo
 
 # Configurar Kit 2
 
-Leia `README.md` e audite o repositório público, que é apenas o molde. Pergunte primeiro se a pessoa
-está criando o escritório ou recebeu um código. O primeiro instalador cria o repositório privado e
+Leia `README.md` e audite o repositório público, que é apenas o molde. Há dois prompts: o Dono instala
+primeiro e entrega ao colaborador o Prompt 2 já preenchido com o código. O primeiro instalador cria o repositório privado e
 usa `iniciar-escritorio`; ele fica congelado como Dono/Administrador e escolhe se também será
 Controller. Somente o Dono gera códigos específicos para Controller ou Advogado. Quem recebeu código não
 informa novamente escritório, papel, agente ou caminho: decodifique, clone o privado e use
 `entrar-com-codigo`, pedindo somente o nome pessoal. Código não substitui o convite pessoal exigido
-pelo GitHub.
+pelo GitHub. Se o convite ainda faltar, identifique automaticamente o usuário GitHub, mostre-o para
+o Dono convidar e retome a mesma instalação assim que o acesso for liberado.
 Conduza como tutor de iniciante absoluto: uma pergunta e uma ação por vez, analogias simples,
 explicação do motivo, checkpoint visual e correção paciente dos erros, sem infantilizar a pessoa.
 Instale silenciosamente Python 3 oficial se faltar; não ofereça escolhas técnicas ao iniciante.

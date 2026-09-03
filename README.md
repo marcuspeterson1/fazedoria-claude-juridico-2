@@ -9,10 +9,13 @@ pessoa usa sua conta pessoal do GitHub e um clone próprio. O núcleo funciona s
 
 O Infinitum é opcional. O modo inicial é sempre `sandbox` e bloqueia efeitos externos.
 
-## Instalação guiada por um prompt
+## Instalação guiada — dois prompts
 
-Abra Claude Code na pasta permanente `Claude` e envie o texto abaixo. O aluno não precisa abrir
-Terminal ou PowerShell.
+O Dono instala primeiro e gera o código. Depois entrega ao colaborador o segundo prompt, substituindo
+`SEU_CODIGO_ENTRADA` pelo código gerado. Cada pessoa envia um único prompt ao Claude Code na pasta
+permanente `Claude`; ninguém precisa abrir Terminal ou PowerShell.
+
+### Prompt 1 — Dono/Administrador
 
 ```text
 Instale o Kit 2 - Implementando sua Esteira de Petições Automatizadas usando esta fonte oficial:
@@ -23,18 +26,14 @@ usando suas ferramentas internas, sem me mandar abrir terminal. Instale silencio
 pré-requisitos oficiais e seguros que faltarem, inclusive Python 3, sem me pedir para escolher o
 método. Só me interrompa para login oficial no GitHub ou decisão pessoal realmente inevitável.
 
-Primeiro faça apenas esta pergunta: “Você está criando o escritório ou recebeu um código de entrada?”
+Estou criando o escritório. Peça somente meu nome e o nome do escritório. Crie um novo repositório
+privado, copie o Kit, confirme no GitHub que está privado e execute `iniciar-escritorio`. Registre-me
+como Dono/Administrador e pergunte se também trabalharei como Controller.
 
-Se eu estiver criando o escritório: peça somente meu nome e o nome do escritório. Crie um novo
-repositório privado, copie o Kit, confirme que está privado e execute `iniciar-escritorio`. O primeiro
-instalador fica congelado como Dono/Administrador. Pergunte se ele também trabalhará como Controller.
-Somente o Dono pode gerar códigos, escolhendo separadamente Controller ou Advogado.
-Explique que, antes de alguém usar o código, a conta pessoal dessa pessoa precisa ser convidada no
-GitHub; faça o convite por mim quando eu informar o usuário GitHub.
-
-Se eu tiver um código: não pergunte nome do escritório, função, agente ou pasta técnica. Decodifique
-o código, abra/clone o repositório privado correspondente e execute `entrar-com-codigo`, perguntando
-somente meu nome. O escritório e o papel vêm do código e não podem ser escolhidos pelo colaborador.
+Ao final, pergunte se quero gerar código para Controller ou Advogado. Somente o Dono pode gerar esses
+códigos. Entregue o código e o Prompt 2 completo já com `SEU_CODIGO_ENTRADA` substituído. Explique que,
+quando o Claude do colaborador identificar o usuário GitHub dele, eu deverei informar esse usuário
+aqui para você enviar o convite ao repositório privado.
 
 Crie automaticamente uma pasta local padrão para os casos. Instale e ative a sincronização em
 segundo plano. Antes de mostrar a fila, sincronize silenciosamente; depois de assumir, entregar,
@@ -44,6 +43,37 @@ Explique conceitos com palavras simples, uma ação por vez e checkpoints curtos
 grave tokens na conversa ou no Git. Não habilite Infinitum nem escrita em sistema externo durante
 este laboratório. Ao final, rode o diagnóstico e mostre apenas o que está pronto e qualquer ação
 pessoal inevitável.
+```
+
+### Prompt 2 — Colaborador
+
+O Dono deve substituir o marcador pelo código antes de entregar este prompt.
+
+```text
+Instale o Kit 2 - Implementando sua Esteira de Petições Automatizadas usando esta fonte oficial:
+https://github.com/marcuspeterson1/fazedoria-claude-juridico-2
+
+Meu código de entrada é "SEU_CODIGO_ENTRADA".
+
+Leia e audite os arquivos antes de executar qualquer coisa. Faça tudo por mim usando suas ferramentas
+internas, sem me mandar abrir Terminal, PowerShell ou Prompt de Comando. Conduza como se eu nunca
+tivesse ouvido falar em GitHub: explique com palavras simples, uma ação por vez e checkpoints curtos.
+
+Se eu ainda não tiver conta no GitHub, abra a página oficial de cadastro no navegador e acompanhe o
+passo a passo. Eu mesmo preencherei senha, confirmação de e-mail, captcha e autenticação. Depois faça
+o login oficial pelo navegador e identifique automaticamente meu nome de usuário, sem mostrar token.
+
+Decodifique o código para descobrir o escritório, o repositório privado e meu papel. Não me pergunte
+nome do escritório, função, agente ou pasta técnica. Pergunte somente meu nome. Se meu usuário ainda
+não tiver acesso ao repositório privado, mostre-o claramente para que o Dono envie o convite e aguarde
+minha confirmação; depois retome nesta mesma conversa, clone o repositório e execute
+`entrar-com-codigo` sem pedir novamente dados já respondidos.
+
+Crie automaticamente a pasta local padrão para os casos, instale as skills e ative a sincronização em
+segundo plano. Sincronize silenciosamente antes de mostrar a fila e depois de cada alteração. Não me
+ensine Git nem peça comandos. Nunca solicite nem grave tokens na conversa ou no Git. Não habilite
+Infinitum nem escrita em sistema externo durante este laboratório. Ao final, rode o diagnóstico e
+mostre apenas o que está pronto e qualquer ação pessoal inevitável.
 ```
 
 ## Como funciona o código de entrada
