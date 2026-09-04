@@ -29,16 +29,6 @@ def _ler_env(path: Path):
         valores[match.group(1)] = valor
     return valores
 
-def _strings_json(data, chave=""):
-    if isinstance(data, dict):
-        for k, v in data.items():
-            yield from _strings_json(v, str(k))
-    elif isinstance(data, list):
-        for v in data:
-            yield from _strings_json(v, chave)
-    elif isinstance(data, str):
-        yield chave, data
-
 def descobrir_chave_existente(organizacao_id: str):
     """Localiza integração já existente sem imprimir, mover ou duplicar o segredo."""
     try:
@@ -58,30 +48,9 @@ def descobrir_chave_existente(organizacao_id: str):
             if valores.get(nome):
                 return valores[nome], f"arquivo seguro existente ({path.name})"
 
-    candidatos = [
-        Path.home() / ".claude.json",
-        Path.home() / ".claude" / "settings.json",
-        Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json",
-    ]
-    appdata = os.getenv("APPDATA")
-    if appdata:
-        candidatos.append(Path(appdata) / "Claude" / "claude_desktop_config.json")
-    env_conjunto = {**_ler_env(Path.home() / ".secrets.env"), **os.environ}
-    for path in candidatos:
-        try:
-            bruto = path.read_text(encoding="utf-8")
-            if "sync.atendedireito.app" not in bruto.lower():
-                continue
-            data = json.loads(bruto)
-        except (OSError, json.JSONDecodeError):
-            continue
-        for nome, valor in _strings_json(data):
-            referencia = re.fullmatch(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", valor.strip())
-            if referencia and env_conjunto.get(referencia.group(1)):
-                return env_conjunto[referencia.group(1)], f"integração existente do Claude ({path.name})"
-            limpo = re.sub(r"^Bear" + r"er\s+", "", valor.strip(), flags=re.I)
-            if ("token" in nome.lower() or "key" in nome.lower() or "authorization" in nome.lower()) and limpo.startswith("sk_"):
-                return limpo, f"integração existente do Claude ({path.name})"
+    # Nunca vasculhe configurações gerais do Claude: elas podem conter chaves de
+    # outras integrações com formato semelhante. Reuso automático só é seguro
+    # quando a fonte nomeia explicitamente a credencial do Sync.
     return None, None
 
 def salvar_chave(chave: str, organizacao_id: str):
@@ -170,7 +139,8 @@ def materializar_entrada(cnj: str, destino: Path, organizacao_id: str, cliente=N
     dados = cliente.autos(cnj)
     destino.mkdir(parents=True, exist_ok=True)
     cronologia = [f"# Autos do processo {cnj}", "", "Fonte: Sync (somente leitura).", ""]
-    manifesto = {"cnj": cnj, "total": dados["total"], "documentos_markdown": [], "indisponiveis": []}
+    manifesto = {"cnj": cnj, "total": dados["total"], "documentos_markdown": [], "indisponiveis": [],
+                 "leitura_integral_confirmada": False}
     for indice, item in enumerate(dados["autos"], 1):
         data = item.get("data") or "sem-data"
         tipo = item.get("tipo") or "item"
@@ -189,6 +159,7 @@ def materializar_entrada(cnj: str, destino: Path, organizacao_id: str, cliente=N
         else:
             manifesto["indisponiveis"].append({"id": item.get("id"), "nome": item.get("nome"),
                                                 "motivo": "sem Markdown no Sync"})
+    manifesto["leitura_integral_confirmada"] = not manifesto["indisponiveis"]
     (destino / "0000-CRONOLOGIA.md").write_text("\n".join(cronologia) + "\n", encoding="utf-8")
     (destino / "manifesto-sync.json").write_text(json.dumps(manifesto, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return destino

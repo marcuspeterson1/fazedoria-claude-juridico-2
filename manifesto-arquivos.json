@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "versao": "2.1.0",
+  "versao": "2.2.0",
   "gerenciados_pelo_kit": [
     "AGENTS.md",
     "CLAUDE.md",

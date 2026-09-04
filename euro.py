@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import platform
@@ -29,6 +30,17 @@ TRANSITIONS = {
     "entregue": {"aprovada", "ajustes", "reprovada"},
     "ajustes": {"em_execucao"},
 }
+
+def hidden_subprocess_kwargs():
+    """Evita janelas de console dos subprocessos no Windows."""
+    return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)} if platform.system() == "Windows" else {}
+
+def configure_git_credentials():
+    """Liga o Git à autenticação já aprovada no GitHub CLI, quando disponível."""
+    gh = shutil.which("gh")
+    if not gh:
+        return
+    subprocess.run([gh, "auth", "setup-git"], capture_output=True, **hidden_subprocess_kwargs())
 
 def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -73,20 +85,26 @@ def auto_git(paths, message):
     if os.getenv("METODO_EURO_NO_AUTO_GIT") == "1" or not (ROOT / ".git").exists(): return
     local = load(LOCAL) if LOCAL.exists() else {}
     if not local.get("sincronizacao_automatica", True): return
-    subprocess.run(["git", "add", "--", *paths], cwd=ROOT, check=True, capture_output=True)
-    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
-        subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True, capture_output=True)
-    pull = subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, capture_output=True, text=True)
+    configure_git_credentials()
+    quiet = hidden_subprocess_kwargs()
+    subprocess.run(["git", "add", "--", *paths], cwd=ROOT, check=True, capture_output=True, **quiet)
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT, **quiet).returncode:
+        subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True, capture_output=True, **quiet)
+    pull = subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, capture_output=True, text=True, **quiet)
     if pull.returncode:
-        subprocess.run(["git", "rebase", "--abort"], cwd=ROOT, capture_output=True)
+        subprocess.run(["git", "rebase", "--abort"], cwd=ROOT, capture_output=True, **quiet)
         raise SystemExit("Sincronização encontrou conflito. As duas versões foram preservadas para conciliação.")
-    if subprocess.run(["git", "push"], cwd=ROOT, capture_output=True).returncode:
+    if subprocess.run(["git", "push"], cwd=ROOT, capture_output=True, **quiet).returncode:
         raise SystemExit("A alteração ficou salva neste computador, mas o envio automático ao escritório falhou.")
 
 def pull_before_read():
     if os.getenv("METODO_EURO_NO_AUTO_GIT") == "1" or not (ROOT / ".git").exists(): return
-    if subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, text=True, capture_output=True).stdout: return
-    subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, capture_output=True)
+    configure_git_credentials()
+    quiet = hidden_subprocess_kwargs()
+    if subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, text=True, capture_output=True, **quiet).stdout: return
+    pull = subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, capture_output=True, text=True, **quiet)
+    if pull.returncode:
+        raise SystemExit("Não foi possível confirmar a fila remota. A fila local pode estar desatualizada; corrija a autenticação/sincronização antes de listar.")
 
 def config():
     if not LOCAL.exists():
@@ -404,16 +422,18 @@ def cmd_status(a):
 def cmd_sync(_a):
     if not (ROOT / ".git").exists():
         raise SystemExit("Este diretório ainda não é um clone Git; nada foi sincronizado.")
-    remotes = subprocess.run(["git", "remote"], cwd=ROOT, text=True, capture_output=True, check=True).stdout.split()
+    configure_git_credentials()
+    quiet = hidden_subprocess_kwargs()
+    remotes = subprocess.run(["git", "remote"], cwd=ROOT, text=True, capture_output=True, check=True, **quiet).stdout.split()
     if not remotes:
         raise SystemExit("Nenhum remote configurado; trabalho local preservado, nada sincronizado.")
-    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, text=True, capture_output=True, check=True).stdout
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, text=True, capture_output=True, check=True, **quiet).stdout
     if dirty:
         raise SystemExit("Há alterações locais não commitadas. Preserve-as em commit antes de sincronizar.")
-    pull = subprocess.run(["git", "pull", "--rebase"], cwd=ROOT)
+    pull = subprocess.run(["git", "pull", "--rebase"], cwd=ROOT, **quiet)
     if pull.returncode:
         raise SystemExit("Conflito ou falha no pull. Estado preservado; concilie sem apagar versões.")
-    push = subprocess.run(["git", "push"], cwd=ROOT)
+    push = subprocess.run(["git", "push"], cwd=ROOT, **quiet)
     if push.returncode:
         raise SystemExit("Pull concluído, mas push falhou; não declare sincronização completa.")
     print("OK — pull e push concluídos no remote configurado.")
@@ -424,6 +444,14 @@ def link_skill(source, target):
         return "já ligada"
     if target.exists() or target.is_symlink():
         return "preservada (já existia)"
+    if platform.system() == "Windows":
+        junction = subprocess.run(["cmd", "/c", "mklink", "/J", str(target), str(source)],
+                                  capture_output=True, text=True, **hidden_subprocess_kwargs())
+        if junction.returncode == 0:
+            return "ligada por junction"
+        shutil.copytree(source, target)
+        (target / ".metodo-euro-copia-gerenciada").write_text(str(source), encoding="utf-8")
+        return "copiada de forma gerenciada (junction indisponível)"
     target.symlink_to(source, target_is_directory=True)
     return "ligada"
 
@@ -444,6 +472,9 @@ def cmd_prepare_auto_sync(_a):
     runtime.mkdir(exist_ok=True)
     runner = runtime / "auto-sync.py"
     runner.write_text("""#!/usr/bin/env python3
+import os
+import platform
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -452,26 +483,33 @@ log = Path(__file__).with_name('auto-sync.log')
 def record(message):
     with log.open('a', encoding='utf-8') as f:
         f.write(datetime.now(timezone.utc).isoformat(timespec='seconds') + ' ' + message + '\\n')
-dirty = subprocess.run(['git','status','--porcelain'], cwd=root, text=True, capture_output=True)
+quiet = {'creationflags': getattr(subprocess, 'CREATE_NO_WINDOW', 0)} if platform.system() == 'Windows' else {}
+gh = shutil.which('gh')
+if gh:
+    subprocess.run([gh, 'auth', 'setup-git'], capture_output=True, **quiet)
+dirty = subprocess.run(['git','status','--porcelain'], cwd=root, text=True, capture_output=True, **quiet)
 if dirty.returncode or dirty.stdout:
     record('BLOQUEADO arvore suja ou Git indisponivel; nada alterado')
     raise SystemExit(0)
-fetch = subprocess.run(['git','fetch','origin'], cwd=root)
+fetch = subprocess.run(['git','fetch','origin'], cwd=root, capture_output=True, **quiet)
 if fetch.returncode:
     record('FALHA fetch; nada apagado')
     raise SystemExit(fetch.returncode)
-pull = subprocess.run(['git','pull','--rebase'], cwd=root)
+pull = subprocess.run(['git','pull','--rebase'], cwd=root, capture_output=True, **quiet)
 if pull.returncode:
-    subprocess.run(['git','rebase','--abort'], cwd=root)
+    subprocess.run(['git','rebase','--abort'], cwd=root, capture_output=True, **quiet)
     record('CONFLITO preservado; rebase abortado para conciliacao')
     raise SystemExit(pull.returncode)
-push = subprocess.run(['git','push','origin','HEAD'], cwd=root)
+push = subprocess.run(['git','push','origin','HEAD'], cwd=root, capture_output=True, **quiet)
 record('OK sincronizado' if push.returncode == 0 else 'FALHA push; commits locais preservados')
 raise SystemExit(push.returncode)
 """, encoding="utf-8")
     os.chmod(runner, 0o700)
     python = Path(sys.executable).resolve()
     if platform.system() == "Windows":
+        pythonw = python.with_name("pythonw.exe")
+        if pythonw.exists():
+            python = pythonw
         task = runtime / "INSTALAR-TAREFA-WINDOWS.ps1"
         task.write_text(f'''$Action = New-ScheduledTaskAction -Execute "{python}" -Argument '"{runner}"'\n$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 10)\nRegister-ScheduledTask -TaskName "MetodoEuroAutoSync" -Action $Action -Trigger $Trigger -Description "Sincroniza o repositorio privado do Metodo Euro" -Force\n''', encoding="utf-8")
         print("OK — execute internamente e valide a tarefa:", task)

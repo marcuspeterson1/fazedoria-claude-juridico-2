@@ -4,7 +4,9 @@ import tempfile
 import unittest
 import contextlib
 import io
+import os
 from pathlib import Path
+from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location("euro", Path(__file__).parents[1] / "euro.py")
 euro = importlib.util.module_from_spec(SPEC)
@@ -76,12 +78,40 @@ class EuroTests(unittest.TestCase):
             self.assertEqual(len(list(entrada.glob("*7*.md"))), 1)
             manifesto = json.loads((entrada / "manifesto-sync.json").read_text())
             self.assertEqual(manifesto["total"], 2)
+            self.assertTrue(manifesto["leitura_integral_confirmada"])
+
+    def test_sync_manifest_blocks_integral_confirmation_when_document_is_unavailable(self):
+        class FakeSync:
+            def autos(self, _cnj):
+                return {"total": 1, "capa": {}, "autos": [
+                    {"tipo": "documento", "data": "2026-01-02", "id": 8,
+                     "nome": "anexo.pdf", "tipo_documento": "Anexo", "tem_markdown": False},
+                ]}
+        with tempfile.TemporaryDirectory() as d:
+            entrada = kit_sync.materializar_entrada("000", Path(d) / "entrada", "org", FakeSync())
+            manifesto = json.loads((entrada / "manifesto-sync.json").read_text())
+            self.assertFalse(manifesto["leitura_integral_confirmada"])
+            self.assertEqual(len(manifesto["indisponiveis"]), 1)
 
     def test_existing_secure_env_file_can_be_reused(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / ".secrets.env"
             path.write_text("ATENDE_DIREITO_SYNC_KEY='valor-local'\n", encoding="utf-8")
             self.assertEqual(kit_sync._ler_env(path)["ATENDE_DIREITO_SYNC_KEY"], "valor-local")
+
+    def test_general_claude_config_is_never_scanned_for_sync_key(self):
+        with tempfile.TemporaryDirectory() as d:
+            home = Path(d)
+            (home / ".claude").mkdir()
+            (home / ".claude" / "settings.json").write_text(
+                '{"url":"https://sync.atendedireito.app","token":"sk_outra_integracao"}',
+                encoding="utf-8")
+            with mock.patch.object(kit_sync.Path, "home", return_value=home), mock.patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(kit_sync.descobrir_chave_existente("org"), (None, None))
+
+    def test_windows_subprocesses_are_hidden(self):
+        with mock.patch.object(euro.platform, "system", return_value="Windows"):
+            self.assertIn("creationflags", euro.hidden_subprocess_kwargs())
 
     def test_tampered_invite_is_rejected(self):
         shared = {"nome_escritorio": "E", "organizacao": {"id": "1", "repositorio": "https://example.invalid/r"}}

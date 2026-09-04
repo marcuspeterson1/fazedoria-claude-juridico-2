@@ -1,5 +1,9 @@
 # Kit 2 - Implementando sua Esteira de Petições Automatizadas
 
+Versão 2.2.0: endurece o modo somente leitura do Sync, restringe o reaproveitamento de credenciais,
+corrige sincronização invisível e autenticação Git no Windows, impede fila falsamente vazia e exige
+conferência de documentos/anexos antes da análise jurídica.
+
 Um núcleo único para Dono/Administrador, Controller e Advogado, Claude Code e Codex.
 O repositório público deste Kit é apenas o molde, sem dados. Durante a instalação, o Claude cria um
 novo repositório **privado** para o escritório. Esse repositório privado é a fonte canônica; cada

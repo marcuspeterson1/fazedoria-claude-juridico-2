@@ -25,3 +25,8 @@ Antes de aplicar, crie um ponto de restauração Git. Depois, instale novamente 
 forma idempotente, rode os testes e `diagnosticar`, registre a versão instalada na configuração local
 e sincronize o repositório privado. Mostre em checkpoint: versão anterior e nova, arquivos incluídos,
 alterados, preservados e conflitos. Se já estiver atualizado, não modifique nada.
+
+Em escritório com vários computadores, o Dono integra a atualização oficial no repositório privado.
+Colaboradores recebem essa versão pela sincronização normal; não devem publicar concorrentemente a
+mesma atualização. Se o remoto avançar durante a atualização, pare, preserve ambos os estados e mostre
+o conflito ao Dono — nunca escolha ou sobrescreva silenciosamente a versão de outra pessoa.
